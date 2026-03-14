@@ -1,0 +1,52 @@
+package com.example.PBL5.controller;
+
+import com.example.PBL5.dto.createLocker;
+import com.example.PBL5.dto.updateLocker;
+import com.example.PBL5.entity.Locker;
+import com.example.PBL5.service.LockerService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/lockers")
+public class LockerController {
+    private final LockerService lockerService;
+
+    public LockerController(LockerService lockerService) {
+        this.lockerService = lockerService;
+    }
+
+    @GetMapping
+    public List<Locker> getAllLockers() {
+        return lockerService.getAllLockers();
+    }
+
+
+    @PostMapping
+    public Locker createLocker(@RequestBody createLocker request) {
+        Locker locker = new Locker();
+        locker.setLocation(request.getLocation());
+        locker.setStatus("AVAILABLE");
+
+        return lockerService.createLocker(locker);
+    }
+
+    @GetMapping("/{id}")
+    public Locker getLockerById(@PathVariable String id) {
+        return lockerService.getLockerById(id);
+    }
+
+    @PutMapping("/{id}")
+    public Locker updateLocker(@PathVariable String id, @RequestBody updateLocker request) {
+        return lockerService.updateLocker(id, request);
+    }
+
+    @DeleteMapping("/{id}")
+    public String deleteLocker(@PathVariable String id) {
+        lockerService.deleteLocker(id);
+        return "deleted";
+    }
+}
+
+
