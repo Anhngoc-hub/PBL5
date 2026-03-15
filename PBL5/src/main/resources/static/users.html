@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Phiên sử dụng - Locker Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Locker Admin</h2>
+        <a href="index.html">🏠 Dashboard</a>
+        <a href="lockers.html">📦 Quản lý Tủ đồ</a>
+        <a href="users.html" class="active">🕒 Phiên sử dụng</a>
+        <a href="support.html">📩 Quản lý Ticket</a>
+        <a href="report.html">⚠️ Báo cáo lỗi</a>
+    </div>
+
+    <div class="main">
+        <header>
+            <h1>Lịch sử Phiên sử dụng (Sessions)</h1>
+        </header>
+
+        <div class="toolbar"
+            style="margin-top: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="sessionSearch" placeholder="Tìm theo Mã tủ hoặc ID phiên..."
+                    style="padding: 10px; width: 320px; border-radius: 8px; border: 1px solid #cbd5e1;">
+                <button class="btn-refresh" onclick="loadSessions()">🔄 Cập nhật</button>
+            </div>
+            <div class="session-stats" style="font-size: 14px; color: #64748b;">
+                Tự động làm mới sau mỗi 10 giây
+            </div>
+        </div>
+
+        <div class="table-container" style="margin-top: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID Phiên</th>
+                        <th>Mã Tủ </th>
+                        <th>Palm Hash </th>
+                        <th>Thời Gian Bắt Đầu</th>
+                        <th>Thời Gian Kết Thúc</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="sessionTable">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            Đang truy xuất dữ liệu phiên sử dụng...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="security-note"
+            style="margin-top: 25px; padding: 15px; background: #f0fdf4; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
+            <span style="font-size: 20px;">🛡️</span>
+            <p style="font-size: 13px; color: #166534; margin: 0;">
+                <strong>Bảo mật dữ liệu:</strong> Trường <code>palm_hash</code> được lưu trữ dưới dạng mã băm một chiều
+                (Hash). Admin chỉ có thể xem mã nhận diện, không thể truy nguyên hình ảnh lòng bàn tay gốc của người
+                dùng.
+            </p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

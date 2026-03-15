@@ -1,0 +1,476 @@
+/* ==========================================
+   1. CẤU HÌNH GỐC & LAYOUT CHUNG
+   ========================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    display: flex;
+    background: #f4f6f9;
+    min-height: 100vh;
+    color: #1e293b;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 240px;
+    background: #1e293b;
+    height: 100vh;
+    padding: 25px;
+    color: white;
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+}
+
+.sidebar h2 {
+    margin-bottom: 30px;
+    font-size: 1.4rem;
+    color: #3b82f6;
+    text-align: center;
+}
+
+.sidebar a {
+    display: block;
+    color: #cbd5e1;
+    text-decoration: none;
+    margin-bottom: 10px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background: #334155;
+    color: white;
+    transform: translateX(5px);
+}
+
+.sidebar a.active {
+    background: #3b82f6;
+    font-weight: bold;
+}
+
+/* Main Content Area */
+.main {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+header {
+    margin-bottom: 30px;
+}
+
+header h1 {
+    font-size: 1.8rem;
+    color: #0f172a;
+}
+
+header p {
+    color: #64748b;
+    margin-top: 5px;
+}
+
+/* ==========================================
+   2. DASHBOARD CARDS & WIDGETS
+   ========================================== */
+.cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
+}
+
+.card {
+    padding: 25px;
+    border-radius: 12px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.card:hover {
+    transform: translateY(-5px);
+}
+
+.blue {
+    background: #3b82f6;
+}
+
+.green {
+    background: #22c55e;
+}
+
+.orange {
+    background: #f59e0b;
+}
+
+.red {
+    background: #ef4444;
+}
+
+.purple {
+    background: #8b5cf6;
+}
+
+.card h3 {
+    font-size: 0.9rem;
+    opacity: 0.9;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.card p {
+    font-size: 32px;
+    margin-top: 10px;
+    font-weight: bold;
+}
+
+/* Dashboard Content Layout */
+.dashboard-content {
+    display: flex;
+    gap: 25px;
+    flex-wrap: wrap;
+    margin-top: 20px;
+}
+
+.chart-container,
+.layout-container {
+    background: white;
+    padding: 25px;
+    border-radius: 12px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+    flex: 1;
+    min-width: 400px;
+}
+
+.chart-box {
+    height: 300px;
+    position: relative;
+    margin-top: 20px;
+}
+
+/* ==========================================
+   3. LOCKER LAYOUT (Sơ đồ tủ)
+   ========================================== */
+#layout {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 12px;
+    margin-top: 20px;
+    padding: 15px;
+    background: #f8fafc;
+    border-radius: 10px;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.locker {
+    aspect-ratio: 1/1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: 0.2s ease;
+}
+
+.locker:hover {
+    transform: scale(1.1);
+    z-index: 5;
+}
+
+/* Trạng thái màu sắc đồng bộ */
+.status-free,
+.free {
+    background-color: #22c55e !important;
+}
+
+.status-in_use,
+.used,
+.in-use {
+    background-color: #f59e0b !important;
+}
+
+.status-error,
+.error {
+    background-color: #ef4444 !important;
+}
+
+.status-lock,
+.locked {
+    background-color: #64748b !important;
+}
+
+.legend {
+    margin-top: 20px;
+    font-size: 14px;
+    color: #475569;
+}
+
+.dot {
+    height: 10px;
+    width: 10px;
+    border-radius: 50%;
+    display: inline-block;
+    margin-right: 5px;
+    margin-left: 15px;
+}
+
+.dot.free {
+    background-color: #22c55e;
+}
+
+.dot.in-use {
+    background-color: #f59e0b;
+}
+
+.dot.error {
+    background-color: #ef4444;
+}
+
+/* ==========================================
+   4. BẢNG DỮ LIỆU (TABLES)
+   ========================================== */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+table {
+    width: 100%;
+    background: white;
+    border-collapse: collapse;
+}
+
+th {
+    background: #1e293b;
+    color: white;
+    padding: 15px;
+    text-align: left;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+    vertical-align: middle;
+}
+
+tr:hover {
+    background: #f8fafc;
+}
+
+/* Trạng thái chữ trong bảng (Không nền) */
+td.status-free {
+    color: #22c55e;
+    font-weight: bold;
+    text-align: center;
+}
+
+td.status-in_use {
+    color: #f59e0b;
+    font-weight: bold;
+    text-align: center;
+}
+
+td.status-error {
+    color: #ef4444;
+    font-weight: bold;
+    text-align: center;
+}
+
+td.status-resolved {
+    color: #10b981;
+    font-weight: bold;
+    text-align: center;
+}
+
+td.status-open {
+    color: #f43f5e;
+    font-weight: bold;
+    text-align: center;
+}
+
+/* Palm Hash column - giới hạn chiều rộng và ẩn bớt */
+td[title] {
+    max-width: 150px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #3b82f6;
+    text-decoration: underline;
+    cursor: help;
+}
+
+/* ==========================================
+   5. CÁC NÚT BẤM (BUTTONS)
+   ========================================== */
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+button:hover {
+    background: #2563eb;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.3);
+}
+
+.btn-add {
+    padding: 12px 24px;
+    font-size: 14px;
+}
+
+.btn-red {
+    background: #ef4444;
+}
+
+.btn-red:hover {
+    background: #dc2626;
+}
+
+.btn-gray {
+    background: #64748b;
+}
+
+.btn-gray:hover {
+    background: #475569;
+}
+
+.btn-save {
+    background: #22c55e;
+}
+
+.btn-save:hover {
+    background: #16a34a;
+}
+
+/* ==========================================
+   6. MODAL & FORMS
+   ========================================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: white;
+    margin: 8% auto;
+    padding: 35px;
+    border-radius: 16px;
+    width: 480px;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
+    animation: slideDown 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.modal-content h2 {
+    margin-bottom: 10px;
+    font-size: 1.5rem;
+    color: #1e293b;
+}
+
+.modal-content hr {
+    border: 0;
+    border-top: 1px solid #e2e8f0;
+    margin-bottom: 20px;
+}
+
+.form-group {
+    margin-bottom: 20px;
+    text-align: left;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #475569;
+    font-size: 14px;
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    font-size: 14px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.form-group input:focus,
+.form-group select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 30px;
+}
+
+/* Toolbar tìm kiếm */
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 15px;
+}
+
+.toolbar input {
+    padding: 11px 15px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    width: 320px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.toolbar input:focus {
+    border-color: #3b82f6;
+}

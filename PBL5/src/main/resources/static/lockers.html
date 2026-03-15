@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Tủ đồ - Locker Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Locker Admin</h2>
+        <a href="index.html">🏠 Dashboard</a>
+        <a href="lockers.html" class="active">📦 Quản lý Tủ đồ</a>
+        <a href="users.html">🕒 Phiên sử dụng</a>
+        <a href="support.html">📩 Quản lý Ticket</a>
+        <a href="report.html">⚠️ Báo cáo lỗi</a>
+    </div>
+
+    <div class="main">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Quản lý Danh sách Tủ</h1>
+            </div>
+            <button class="btn-add" onclick="showLockerModal()">+ Thêm Tủ Mới</button>
+        </header>
+
+        <div class="toolbar" style="margin-top: 20px;">
+            <input type="text" id="lockerSearch" placeholder="Tìm kiếm mã tủ hoặc vị trí..."
+                style="padding: 10px; width: 300px; border-radius: 8px; border: 1px solid #cbd5e1;">
+        </div>
+
+        <div class="table-container" style="margin-top: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID </th>
+                        <th>Vị Trí </th>
+                        <th>Trạng Thái</th>
+                        <th>Hành Động </th>
+                    </tr>
+                </thead>
+                <tbody id="lockerTable">
+                    <tr>
+                        <td colspan="4">Đang tải danh sách tủ đồ...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="lockerModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Thông tin Tủ đồ</h2>
+            <hr>
+            <input type="hidden" id="editLockerId">
+
+            <div class="form-group">
+                <label for="lockerLocation">Vị trí tủ:</label>
+                <input type="text" id="lockerLocation" placeholder="Ví dụ: Tầng 1 - Khu A">
+            </div>
+
+            <div class="form-group" id="statusGroup">
+                <label for="lockerStatus">Trạng thái hiện tại:</label>
+                <select id="lockerStatus">
+                    <option value="FREE">FREE </option>
+                    <option value="IN_USE">IN_USE </option>
+                    <option value="ERROR">ERROR </option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-save" onclick="saveLocker()">Lưu thông tin</button>
+                <button class="btn-cancel" onclick="closeModal()">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
