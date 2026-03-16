@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Locker Admin - Dashboard</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Locker Admin</h2>
+        <a href="index.html" class="active">🏠 Dashboard</a>
+        <a href="lockers.html">📦 Quản lý Tủ đồ</a>
+        <a href="users.html">🕒 Phiên sử dụng</a>
+        <a href="support.html">📩 Quản lý Ticket</a>
+    </div>
+
+    <div class="main">
+        <header>
+            <h1>Tổng quan hệ thống</h1>
+        </header>
+
+        <div class="cards">
+            <div class="card blue">
+                <h3>Tổng số tủ</h3>
+                <p id="total">0</p>
+            </div>
+            <div class="card green">
+                <h3>Tủ đang trống</h3>
+                <p id="free">0</p>
+            </div>
+            <div class="card orange">
+                <h3>Đang sử dụng</h3>
+                <p id="occupied">0</p>
+            </div>
+            <div class="card red">
+                <h3>Tủ báo lỗi</h3>
+                <p id="error">0</p>
+            </div>
+            <div class="card purple">
+                <h3>Ticket chưa xử lý</h3>
+                <p id="supportCount">0</p>
+            </div>
+        </div>
+
+        <div class="dashboard-content">
+            <div class="chart-container">
+                <h3>Tỷ lệ trạng thái tủ</h3>
+                <div class="chart-box">
+                    <canvas id="chart"></canvas>
+                </div>
+            </div>
+
+            <div class="layout-container">
+                <h3>Sơ đồ tủ đồ thực tế </h3>
+                <div id="layout">
+                    <p>Đang tải dữ liệu...</p>
+                </div>
+                <div class="legend">
+                    <span class="dot free"></span> Trống
+                    <span class="dot in-use"></span> Đang dùng
+                    <span class="dot error"></span> Lỗi
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

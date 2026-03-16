@@ -1,0 +1,337 @@
+/* ==========================================
+   1. CẤU HÌNH GỐC & LAYOUT CHUNG
+   ========================================== */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    display: flex;
+    background: #f4f6f9;
+    min-height: 100vh;
+    color: #1e293b;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 240px;
+    background: #1e293b;
+    height: 100vh;
+    padding: 25px;
+    color: white;
+    position: sticky;
+    top: 0;
+    flex-shrink: 0;
+}
+
+.sidebar h2 {
+    margin-bottom: 30px;
+    font-size: 1.4rem;
+    color: #3b82f6;
+    text-align: center;
+}
+
+.sidebar a {
+    display: block;
+    color: #cbd5e1;
+    text-decoration: none;
+    margin-bottom: 10px;
+    padding: 12px 15px;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+}
+
+.sidebar a:hover,
+.sidebar a.active {
+    background: #334155;
+    color: white;
+    transform: translateX(5px);
+}
+
+.sidebar a.active {
+    background: #3b82f6;
+    font-weight: bold;
+}
+
+/* Main Content Area */
+.main {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+header h1 {
+    font-size: 1.8rem;
+    color: #0f172a;
+}
+
+/* ==========================================
+   2. THANH CÔNG CỤ (TOOLBAR) & TÌM KIẾM
+   ========================================== */
+.toolbar {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    margin-bottom: 25px;
+    gap: 15px;
+    background: #f8fafc;
+    padding: 15px;
+    border-radius: 10px;
+    border: 1px solid #e2e8f0;
+}
+
+.toolbar label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #64748b;
+    margin-bottom: 5px;
+}
+
+.toolbar input,
+.toolbar select {
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 8px;
+    outline: none;
+    transition: 0.2s;
+}
+
+.toolbar input:focus,
+.toolbar select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* ==========================================
+   3. BẢNG DỮ LIỆU (TABLES) & TRẠNG THÁI
+   ========================================== */
+.table-container {
+    background: white;
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+th {
+    background: #1e293b;
+    color: white;
+    padding: 15px;
+    text-align: left;
+    font-size: 13px;
+    text-transform: uppercase;
+}
+
+td {
+    padding: 15px;
+    border-bottom: 1px solid #f1f5f9;
+    font-size: 14px;
+}
+
+/* Màu sắc Trạng thái (Status) trong bảng */
+.status-free,
+.status-available {
+    color: #15803d !important;
+    font-weight: bold;
+    background: #dcfce7;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.status-in-use,
+.status-occupied {
+    color: #d97706 !important;
+    font-weight: bold;
+    background: #fef3c7;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+.status-error {
+    color: #ef4444 !important;
+    font-weight: bold;
+    background: #fee2e2;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* ==========================================
+   4. CÁC NÚT BẤM (BUTTONS)
+   ========================================== */
+button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.2s ease;
+    font-size: 13px;
+}
+
+.btn-add {
+    background: #3b82f6;
+    color: white;
+    padding: 12px 24px;
+}
+
+.btn-save {
+    background: #22c55e;
+    color: white;
+}
+
+.btn-cancel {
+    background: #94a3b8;
+    color: white;
+}
+
+button:hover {
+    opacity: 0.9;
+    transform: translateY(-1px);
+}
+
+/* ==========================================
+   5. MODAL & FORMS (Ticket & Locker)
+   ========================================== */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(3px);
+}
+
+.modal-content {
+    background: white;
+    margin: 5% auto;
+    padding: 30px;
+    border-radius: 12px;
+    width: 450px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-20px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    font-size: 13px;
+}
+
+.form-group input,
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+/* ==========================================
+   6. ERROR DIALOG (WINDOWS STYLE)
+   ========================================== */
+.error-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+.error-dialog-box {
+    background: #f0f0f0;
+    width: 400px;
+    border: 1px solid #666;
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.3);
+}
+
+.error-dialog-header {
+    background: #ffffff;
+    padding: 5px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 12px;
+    font-weight: bold;
+    border-bottom: 1px solid #ccc;
+}
+
+.close-x {
+    background: transparent;
+    color: #666;
+    font-size: 18px;
+    padding: 0;
+}
+
+.error-dialog-body {
+    padding: 25px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    background: white;
+}
+
+.error-icon {
+    width: 40px;
+    height: 40px;
+    background: #ef4444;
+    color: white;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    font-weight: bold;
+    flex-shrink: 0;
+}
+
+.error-dialog-footer {
+    padding: 10px;
+    text-align: right;
+    background: #f0f0f0;
+}
+
+.btn-ok {
+    padding: 4px 25px;
+    background: #e1e1e1;
+    border: 1px solid #999;
+    color: black;
+}

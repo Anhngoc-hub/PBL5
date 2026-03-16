@@ -41,8 +41,12 @@ public class SessionController {
         String message = sessionService.finishSession(id);
         return Map.of("message", message);
     }*/
-    @PostMapping("/palm")
+  /*  @PostMapping("/palm")
     public PalmScanResponse scanPalm(@RequestBody PalmScanRequest palmScanRequest) {
         return sessionService.scanPalm(palmScanRequest.getPalmHash());
+    }*/
+    @GetMapping("/active")
+    public List<SessionResponse> getAllActiveSessions() {
+        return sessionService.getActiveSessions();
     }
 }

@@ -18,10 +18,10 @@ public class Locker {
     public Locker() {
 
     }
-    public Locker(String id, String status, String loacation) {
+    public Locker(String id, String status, String location) {
         this.id = id;
         this.status = status;
-        this.location = loacation;
+        this.location = location;
     }
 
     public String getId() {

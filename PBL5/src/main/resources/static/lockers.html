@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Tủ đồ - Locker Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Locker Admin</h2>
+        <a href="index.html">🏠 Dashboard</a>
+        <a href="lockers.html" class="active">📦 Quản lý Tủ đồ</a>
+        <a href="users.html">🕒 Phiên sử dụng</a>
+        <a href="support.html">📩 Quản lý Ticket</a>
+    </div>
+
+    <div class="main">
+        <header style="display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h1>Quản lý Danh sách Tủ</h1>
+            </div>
+            <button class="btn-add" onclick="showLockerModal()">+ Thêm Tủ Mới</button>
+        </header>
+
+        <div class="toolbar">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label>Từ khóa:</label>
+                <input type="text" id="lockerSearch" placeholder="Mã tủ hoặc vị trí...">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label>Trạng thái:</label>
+                <select id="statusFilter">
+                    <option value="ALL">-- Tất cả --</option>
+                    <option value="AVAILABLE">AVAILABLE (Trống)</option>
+                    <option value="OCCUPIED">OCCUPIED (Đang dùng)</option>
+                    <option value="ERROR">ERROR (Lỗi)</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                <button onclick="filterLockers()" style="background: #3b82f6;">🔍 Tìm kiếm</button>
+                <button onclick="resetFilters()" class="btn-cancel">🔄 Làm mới</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Vị Trí</th>
+                        <th>Trạng Thái</th>
+                        <th>Hành Động</th>
+                    </tr>
+                </thead>
+                <tbody id="lockerTable">
+                    <tr>
+                        <td colspan="4">Đang tải danh sách tủ đồ...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div id="lockerModal" class="modal">
+        <div class="modal-content">
+            <h2 id="modalTitle">Thông tin Tủ đồ</h2>
+            <hr>
+            <input type="hidden" id="editFlag">
+
+            <div id="error-message"
+                style="display: none; color: #ef4444; background: #fee2e2; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; border: 1px solid #fecaca; text-align: center; font-weight: bold;">
+            </div>
+
+            <div class="form-group" id="idInputGroup">
+                <label for="lockerId">Mã tủ (ID):</label>
+                <input type="text" id="lockerId" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="lockerLocation">Vị trí tủ:</label>
+                <input type="text" id="lockerLocation" placeholder="Ví dụ: Tầng 1 - Khu A">
+            </div>
+
+            <div class="form-group" id="statusGroup">
+                <label for="lockerStatus">Trạng thái hiện tại:</label>
+                <select id="lockerStatus">
+                    <option value="AVAILABLE">AVAILABLE (Trống)</option>
+                    <option value="OCCUPIED">OCCUPIED (Đang dùng)</option>
+                    <option value="ERROR">ERROR (Lỗi)</option>
+                </select>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-save" onclick="saveLocker()">Lưu thông tin</button>
+                <button class="btn-cancel" onclick="closeModal()">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ticketModal" class="modal">
+        <div class="modal-content">
+            <h2>Báo Cáo Sự Cố Tủ <span id="displayLockerId" style="color: #3b82f6;"></span></h2>
+            <hr>
+
+            <div class="form-group">
+                <label>Mã tủ bị lỗi:</label>
+                <input type="text" id="ticketLockerId" disabled>
+            </div>
+
+            <div class="form-group">
+                <label>Thời gian tạo báo cáo:</label>
+                <input type="text" id="ticketTime" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="ticketReason">Lý do/Nội dung sự cố:</label>
+                <textarea id="ticketReason" rows="4"
+                    placeholder="Ví dụ: Tủ không mở được dù đã quét vân tay, kẹt khóa..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-save" onclick="submitTicket()">Gửi Báo Cáo</button>
+                <button class="btn-cancel" onclick="closeTicketModal()">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorDialog" class="error-dialog-overlay" style="display: none;">
+        <div class="error-dialog-box">
+            <div class="error-dialog-header">
+                <span>ERROR</span>
+                <button class="close-x" onclick="closeErrorDialog()">×</button>
+            </div>
+            <div class="error-dialog-body">
+                <div class="error-icon">×</div>
+                <p id="errorDialogMessage">An unexpected error has occurred!</p>
+            </div>
+            <div class="error-dialog-footer">
+                <button class="btn-ok" onclick="closeErrorDialog()">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

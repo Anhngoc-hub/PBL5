@@ -13,18 +13,17 @@ public class Ticket {
     private LocalDateTime created_at;
     @Column (name ="reason")
     private String reason;
-    @Column (name ="status")
-    private String status;
     @ManyToOne
     @JoinColumn(name ="session_id")
     private Session session;
-
+    @ManyToOne
+    @JoinColumn(name ="locker_id")
+    private Locker locker;
     public Ticket() {}
 
-    public Ticket(String id, LocalDateTime created_at, String status, String reason, Session session) {
+    public Ticket(String id, LocalDateTime created_at, String reason, Session session) {
         this.id = id;
         this.created_at = created_at;
-        this.status = status;
         this.reason = reason;
         this.session = session;
     }
@@ -45,20 +44,20 @@ public class Ticket {
         this.created_at = created_at;
     }
 
+    public Locker getLocker() {
+        return locker;
+    }
+
+    public void setLocker(Locker locker) {
+        this.locker = locker;
+    }
+
     public String getReason() {
         return reason;
     }
 
     public void setReason(String reason) {
         this.reason = reason;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
     }
 
     public Session getSession() {

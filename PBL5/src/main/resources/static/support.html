@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Ticket - Locker Admin</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="sidebar">
+        <h2>Locker Admin</h2>
+        <a href="index.html">🏠 Dashboard</a>
+        <a href="lockers.html">📦 Quản lý Tủ đồ</a>
+        <a href="users.html">🕒 Phiên sử dụng</a>
+        <a href="support.html" class="active">📩 Quản lý Ticket</a>
+    </div>
+
+    <div class="main">
+        <header>
+            <h1>Trung tâm Hỗ trợ & Ticket</h1>
+        </header>
+
+        <div class="toolbar" style="margin-top: 20px; display: flex; gap: 10px;">
+            <button class="btn-filter" onclick="loadTickets()">🔄 Làm mới danh sách</button>
+            <input type="text" id="ticketSearch" placeholder="Tìm theo mã tủ hoặc lý do..."
+                style="padding: 10px; width: 300px; border-radius: 8px; border: 1px solid #cbd5e1;">
+        </div>
+
+        <div class="table-container" style="margin-top: 20px;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Mã Ticket</th>
+                        <th>Mã Tủ </th>
+                        <th>Thời Gian Tạo</th>
+                        <th>Lý Do Sự Cố</th>
+                        <th>Trạng Thái</th>
+                        <th>Thao Tác Admin</th>
+                    </tr>
+                </thead>
+                <tbody id="supportTable">
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
+                            Đang tải danh sách yêu cầu hỗ trợ...
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="note-box"
+            style="margin-top: 20px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">
+            <p style="font-size: 14px; color: #92400e;">
+                <strong>💡 Lưu ý:</strong> Khi chọn <strong>"Giải quyết"</strong>, trạng thái ticket sẽ chuyển thành
+                <code>RESOLVED</code>. Hãy đảm bảo bạn đã kiểm tra tủ đồ vật lý hoặc xử lý xong sự cố cho khách hàng
+                trước khi đóng ticket.
+            </p>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>

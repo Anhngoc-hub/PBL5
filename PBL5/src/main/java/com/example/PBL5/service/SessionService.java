@@ -66,7 +66,17 @@ public class SessionService {
         return convertToDTO(session);
     }
 
-    public PalmScanResponse scanPalm(String palmHash) {
+    public List<SessionResponse> getActiveSessions() {
+        List<Session> sessions = sessionRepository.findByStatus("ACTIVE");
+        List<SessionResponse> result = new ArrayList<>();
+
+        for (Session session : sessions) {
+            result.add(convertToDTO(session));
+        }
+        return result;
+    }
+
+  /*  public PalmScanResponse scanPalm(String palmHash) {
         Session session = sessionRepository.findByPalmHashAndStatus(palmHash, "ACTIVE");
         if(session != null){
 
@@ -117,7 +127,7 @@ public class SessionService {
                 locker.getId(),
                 newId
         );
-    }
+    }*/
 
     /*public SessionResponse createSession(String palmHash) {
         //check palm da co session chua
