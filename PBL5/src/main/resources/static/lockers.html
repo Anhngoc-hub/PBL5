@@ -35,10 +35,10 @@
             <table>
                 <thead>
                     <tr>
-                        <th>ID </th>
-                        <th>Vị Trí </th>
+                        <th>ID</th>
+                        <th>Vị Trí</th>
                         <th>Trạng Thái</th>
-                        <th>Hành Động </th>
+                        <th>Hành Động</th>
                     </tr>
                 </thead>
                 <tbody id="lockerTable">
@@ -54,7 +54,12 @@
         <div class="modal-content">
             <h2 id="modalTitle">Thông tin Tủ đồ</h2>
             <hr>
-            <input type="hidden" id="editLockerId">
+            <input type="hidden" id="editFlag">
+
+            <div class="form-group" id="idInputGroup">
+                <label for="lockerId">Mã tủ (ID):</label>
+                <input type="text" id="lockerId" placeholder="Ví dụ: LK099">
+            </div>
 
             <div class="form-group">
                 <label for="lockerLocation">Vị trí tủ:</label>
@@ -64,9 +69,9 @@
             <div class="form-group" id="statusGroup">
                 <label for="lockerStatus">Trạng thái hiện tại:</label>
                 <select id="lockerStatus">
-                    <option value="FREE">FREE </option>
-                    <option value="IN_USE">IN_USE </option>
-                    <option value="ERROR">ERROR </option>
+                    <option value="AVAILABLE">AVAILABLE (Trống)</option>
+                    <option value="OCCUPIED">OCCUPIED (Đang dùng)</option>
+                    <option value="ERROR">ERROR (Lỗi)</option>
                 </select>
             </div>
 

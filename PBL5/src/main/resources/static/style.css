@@ -275,17 +275,20 @@ tr:hover {
     background: #f8fafc;
 }
 
-/* Trạng thái chữ trong bảng (Không nền) */
-td.status-free {
-    color: #22c55e;
+
+td.status-in-use,
+td.status-occupied {
+    background-color: #fef3c7 !important;
+    color: #d97706 !important;
     font-weight: bold;
-    text-align: center;
+    border-radius: 4px;
 }
 
-td.status-in_use {
-    color: #f59e0b;
+td.status-free,
+td.status-available {
+    background-color: #dcfce7 !important;
+    color: #15803d !important;
     font-weight: bold;
-    text-align: center;
 }
 
 td.status-error {

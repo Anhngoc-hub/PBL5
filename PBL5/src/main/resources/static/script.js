@@ -1,4 +1,13 @@
-const API = "http://localhost:8080/api";
+// ==========================================
+// 1. CẤU HÌNH ĐƯỜNG DẪN & BIẾN TOÀN CỤC
+// ==========================================
+const API = "";
+const ENDPOINTS = {
+    LOCKERS: `${API}/lockers`,
+    SESSIONS: `${API}/sessions`,
+    TICKETS: `${API}/tickets`
+};
+
 let chartInstance = null;
 
 // Khởi tạo khi trang web tải xong
@@ -9,35 +18,121 @@ document.addEventListener("DOMContentLoaded", () => {
     setupTicketForm();
 });
 
-// Điều hướng tải dữ liệu dựa trên file HTML đang mở
+// Điều hướng tải dữ liệu dựa trên URL
 function loadPageData() {
     const path = window.location.pathname;
-    const page = path.split("/").pop();
+    if (path === "/" || path.endsWith("index.html") || path === "") {
+        loadDashboard();
+    } else if (path.includes("lockers.html")) {
+        loadLockers();
+    } else if (path.includes("users.html")) {
+        loadSessions();
+    } else if (path.includes("support.html")) {
+        loadTickets();
+    }
+}
 
-    if (page === "index.html" || page === "") loadDashboard();
-    if (page === "lockers.html") loadLockers();
-    if (page === "users.html") loadSessions();
-    if (page === "support.html") loadTickets();
+// Hàm chuẩn hóa Status để hiện đúng màu CSS
+function getStatusClass(status) {
+    if (!status) return "free";
+    const s = status.toUpperCase();
+    if (s === "FREE" || s === "AVAILABLE") return "free";
+    if (s === "OCCUPIED" || s === "IN_USE") return "in-use";
+    if (s === "ERROR") return "error";
+    return s.toLowerCase();
 }
 
 // ==========================================
-// 1. QUẢN LÝ LOCKER (Bảng: pbl5 locker)
+// 2. QUẢN LÝ LOCKER (TRANG lockers.html)
 // ==========================================
+
+// Hàm mở Modal để THÊM MỚI
+function showLockerModal() {
+    const modal = document.getElementById("lockerModal");
+    if (!modal) return;
+
+    document.getElementById("modalTitle").innerText = "Thêm Tủ Đồ Mới";
+    document.getElementById("editFlag").value = ""; // Rỗng = Thêm mới
+
+    const idInput = document.getElementById("lockerId");
+    if (idInput) {
+        idInput.value = "";
+        idInput.disabled = false; // Cho phép nhập ID tay
+    }
+
+    document.getElementById("lockerLocation").value = "";
+    document.getElementById("statusGroup").style.display = "none";
+    modal.style.display = "block";
+}
+
+// Hàm mở Modal để CHỈNH SỬA
+async function showEditLocker(id) {
+    try {
+        const l = await fetch(`${ENDPOINTS.LOCKERS}/${id}`).then(res => res.json());
+        const modal = document.getElementById("lockerModal");
+        if (!modal) return;
+
+        document.getElementById("modalTitle").innerText = "Cập Nhật Tủ #" + id;
+        document.getElementById("editFlag").value = "EDIT";
+
+        const idInput = document.getElementById("lockerId");
+        if (idInput) {
+            idInput.value = id;
+            idInput.disabled = true; // Khóa ID khi sửa
+        }
+
+        document.getElementById("lockerLocation").value = l.location || "";
+        document.getElementById("lockerStatus").value = l.status;
+        document.getElementById("statusGroup").style.display = "block";
+        modal.style.display = "block";
+    } catch (e) { alert("Không tìm thấy thông tin tủ."); }
+}
+
+// Hàm LƯU DỮ LIỆU (POST/PUT)
+async function saveLocker() {
+    const isEdit = document.getElementById("editFlag").value === "EDIT";
+    const id = document.getElementById("lockerId").value;
+    const location = document.getElementById("lockerLocation").value;
+    const status = document.getElementById("lockerStatus").value;
+
+    if (!id || !location) {
+        alert("Vui lòng nhập đầy đủ Mã tủ (ID) và Vị trí!");
+        return;
+    }
+
+    const method = isEdit ? "PUT" : "POST";
+    const url = isEdit ? `${ENDPOINTS.LOCKERS}/${id}` : ENDPOINTS.LOCKERS;
+    const bodyData = isEdit ? { location, status } : { id, location };
+
+    try {
+        const response = await fetch(url, {
+            method: method,
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(bodyData)
+        });
+
+        if (response.ok) {
+            closeModal();
+            loadLockers();
+        } else {
+            alert("Lỗi: Mã tủ (ID) có thể đã tồn tại!");
+        }
+    } catch (e) { alert("Lỗi kết nối server."); }
+}
 
 async function loadLockers() {
     try {
-        const data = await fetch(`${API}/lockers`).then(res => res.json());
+        const data = await fetch(ENDPOINTS.LOCKERS).then(res => res.json());
         const tbody = document.getElementById("lockerTable");
         if (!tbody) return;
 
         tbody.innerHTML = data.map(l => `
             <tr>
                 <td><strong>${l.id}</strong></td>
-                <td>${l.location}</td>
-                <td class="status-${l.status.toLowerCase()}">${l.status}</td>
+                <td>${l.location || 'Chưa xác định'}</td>
+                <td class="status-${getStatusClass(l.status)}">${l.status}</td>
                 <td>
-                    <button onclick="handleLockerControl('${l.id}', 'open')">Mở</button>
-                    <button style="background:#64748b" onclick="handleLockerControl('${l.id}', 'close')">Đóng</button>
+                    <button style="background:#3b82f6" onclick="handleLockerControl('${l.id}', 'open')">Mở</button>
                     <button style="background:#475569" onclick="showEditLocker('${l.id}')">Sửa</button>
                     <button style="background:#ef4444" onclick="deleteLocker('${l.id}')">Xóa</button>
                 </td>
@@ -46,103 +141,97 @@ async function loadLockers() {
     } catch (e) { console.error("Lỗi tải danh sách tủ:", e); }
 }
 
-async function showLockerModal() {
-    const modal = document.getElementById("lockerModal");
-    if (!modal) return;
-    document.getElementById("modalTitle").innerText = "Thêm Tủ Đồ Mới";
-    document.getElementById("editLockerId").value = "";
-    document.getElementById("lockerLocation").value = "";
-    document.getElementById("statusGroup").style.display = "none";
-    modal.style.display = "block";
-}
-
-async function showEditLocker(id) {
-    const l = await fetch(`${API}/lockers/${id}`).then(res => res.json());
-    const modal = document.getElementById("lockerModal");
-    if (!modal) return;
-
-    document.getElementById("modalTitle").innerText = "Cập Nhật Tủ #" + id;
-    document.getElementById("editLockerId").value = id;
-    document.getElementById("lockerLocation").value = l.location;
-    document.getElementById("lockerStatus").value = l.status;
-    document.getElementById("statusGroup").style.display = "block";
-    modal.style.display = "block";
-}
-
-async function saveLocker() {
-    const id = document.getElementById("editLockerId").value;
-    const location = document.getElementById("lockerLocation").value;
-    const status = document.getElementById("lockerStatus").value;
-
-    if (!location) return alert("Vui lòng nhập vị trí!");
-
-    const method = id ? "PUT" : "POST";
-    const url = id ? `${API}/lockers/${id}` : `${API}/lockers`;
-    const body = id ? { location, status } : { location };
-
-    await fetch(url, {
-        method: method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body)
-    });
-
-    closeModal();
-    loadLockers();
-}
-
 async function deleteLocker(id) {
-    if (!confirm("Xóa tủ " + id + "?")) return;
-    await fetch(`${API}/lockers/${id}`, { method: "DELETE" });
+    if (!confirm(`Xác nhận xóa tủ ${id}?`)) return;
+    await fetch(`${ENDPOINTS.LOCKERS}/${id}`, { method: "DELETE" });
     loadLockers();
 }
 
+function closeModal() {
+    const modal = document.getElementById("lockerModal");
+    if (modal) modal.style.display = "none";
+}
+
 // ==========================================
-// 2. QUẢN LÝ SESSION (Bảng: pbl5 session)
+// 3. DASHBOARD, SESSIONS & TICKETS
 // ==========================================
+async function loadDashboard() {
+    try {
+        const [lockers, tickets] = await Promise.all([
+            fetch(ENDPOINTS.LOCKERS).then(res => res.json()),
+            fetch(ENDPOINTS.TICKETS).then(res => res.ok ? res.json() : []).catch(() => [])
+        ]);
+
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.innerText = val;
+        };
+
+        const countFree = lockers.filter(l => ["FREE", "AVAILABLE"].includes(l.status.toUpperCase())).length;
+        const countUsed = lockers.filter(l => ["OCCUPIED", "IN_USE"].includes(l.status.toUpperCase())).length;
+        const countError = lockers.filter(l => l.status.toUpperCase() === "ERROR").length;
+
+        setVal("total", lockers.length);
+        setVal("free", countFree);
+        setVal("occupied", countUsed);
+        setVal("error", countError);
+        setVal("supportCount", tickets.filter(t => t.status !== "RESOLVED").length);
+
+        const ctx = document.getElementById("chart");
+        if (ctx) {
+            if (chartInstance) chartInstance.destroy();
+            chartInstance = new Chart(ctx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Trống', 'Đang dùng', 'Lỗi'],
+                    datasets: [{
+                        data: [countFree, countUsed, countError],
+                        backgroundColor: ['#22c55e', '#f59e0b', '#ef4444']
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false }
+            });
+        }
+
+        const layout = document.getElementById("layout");
+        if (layout) {
+            layout.innerHTML = lockers.map(l => `
+                <div class="locker status-${getStatusClass(l.status)}" title="Vị trí: ${l.location || 'N/A'}">${l.id}</div>
+            `).join("");
+        }
+    } catch (e) { console.error("Lỗi Dashboard:", e); }
+}
 
 async function loadSessions() {
     try {
-        const data = await fetch(`${API}/sessions`).then(res => res.json());
+        const data = await fetch(ENDPOINTS.SESSIONS).then(res => res.json());
         const tbody = document.getElementById("sessionTable");
         if (!tbody) return;
-
         tbody.innerHTML = data.map(s => `
             <tr>
                 <td>${s.id}</td>
-                <td>${s.locker_id}</td>
-                <td title="${s.palm_hash}" style="cursor:help; color:#3b82f6;">Xem mã băm</td>
+                <td>${s.locker_id || 'N/A'}</td>
+                <td style="font-family:monospace; color:#3b82f6;">${s.palm_hash || '---'}</td>
                 <td>${s.start_time ? new Date(s.start_time).toLocaleString('vi-VN') : '---'}</td>
-                <td>${s.end_time ? new Date(s.end_time).toLocaleString('vi-VN') : '<span style="color:green">Đang hoạt động</span>'}</td>
-                <td>
-                    <button style="background:#f59e0b" onclick="finishSession('${s.id}')">Kết thúc</button>
-                </td>
+                <td>${s.end_time ? new Date(s.end_time).toLocaleString('vi-VN') : '<span style="color:green; font-weight:bold;">ĐANG DÙNG</span>'}</td>
+                <td><button style="background:#f59e0b" onclick="finishSession('${s.id}')">Kết thúc</button></td>
             </tr>
         `).join("");
     } catch (e) { console.error("Lỗi tải phiên sử dụng:", e); }
 }
 
-async function finishSession(id) {
-    await fetch(`${API}/sessions/${id}/finish`, { method: "PUT" });
-    loadSessions();
-}
-
-// ==========================================
-// 3. QUẢN LÝ TICKET (Bảng: pbl5 ticket)
-// ==========================================
-
 async function loadTickets() {
     try {
-        const data = await fetch(`${API}/tickets`).then(res => res.json());
+        const data = await fetch(ENDPOINTS.TICKETS).then(res => res.json());
         const tbody = document.getElementById("supportTable");
         if (!tbody) return;
-
         tbody.innerHTML = data.map(t => `
             <tr>
                 <td>${t.id}</td>
-                <td>${t.locker_id || 'N/A'}</td>
-                <td>${new Date(t.created_at).toLocaleString('vi-VN')}</td>
+                <td>${t.session_id || 'N/A'}</td>
+                <td>${t.created_at ? new Date(t.created_at).toLocaleString('vi-VN') : '---'}</td>
                 <td>${t.reason}</td>
-                <td class="status-${t.status.toLowerCase()}">${t.status}</td>
+                <td class="status-${t.status ? t.status.toLowerCase() : 'open'}">${t.status}</td>
                 <td>
                     <button onclick="updateTicketStatus('${t.id}', 'RESOLVED')">Giải quyết</button>
                     <button style="background:#ef4444" onclick="deleteTicket('${t.id}')">Xóa</button>
@@ -152,257 +241,33 @@ async function loadTickets() {
     } catch (e) { console.error("Lỗi tải ticket:", e); }
 }
 
-async function updateTicketStatus(id, status) {
-    await fetch(`${API}/tickets/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: status })
-    });
-    loadTickets();
+async function handleLockerControl(id, action) {
+    try {
+        const res = await fetch(`${ENDPOINTS.LOCKERS}/${id}/${action}`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ sessionId: "ADMIN_OVER_WRITE" })
+        }).then(res => res.json());
+        alert(res.message || "Lệnh đã được gửi đi!");
+        loadLockers();
+    } catch (e) { alert("Lỗi điều khiển tủ đồ."); }
 }
 
-async function deleteTicket(id) {
-    if (!confirm("Xóa ticket này?")) return;
-    await fetch(`${API}/tickets/${id}`, { method: "DELETE" });
-    loadTickets();
-}
-
-// Hàm gửi ticket từ trang report.html
 function setupTicketForm() {
     const form = document.getElementById("ticketForm");
     if (!form) return;
-
     form.onsubmit = async (e) => {
         e.preventDefault();
-        const locker_id = document.getElementById("ticketLockerId").value; // Theo DB dùng locker_id
+        const session_id = document.getElementById("ticketLockerId").value;
         const reason = document.getElementById("ticketReason").value;
-        const msg = document.getElementById("responseMessage");
-
         try {
-            const res = await fetch(`${API}/tickets`, {
+            await fetch(ENDPOINTS.TICKETS, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ locker_id, reason })
+                body: JSON.stringify({ session_id, reason, status: "OPEN" })
             });
-            if (res.ok) {
-                msg.innerText = "✅ Đã gửi báo cáo lỗi thành công!";
-                msg.style.color = "green";
-                form.reset();
-            }
-        } catch (e) {
-            msg.innerText = "❌ Không thể gửi báo cáo.";
-            msg.style.color = "red";
-        }
+            document.getElementById("responseMessage").innerText = "✅ Đã gửi báo cáo lỗi thành công!";
+            form.reset();
+        } catch (e) { document.getElementById("responseMessage").innerText = "❌ Lỗi kết nối server."; }
     };
 }
-
-// ==========================================
-// 4. LOCKER CONTROL (Mở/Đóng)
-// ==========================================
-
-async function handleLockerControl(id, action) {
-    try {
-        const res = await fetch(`${API}/lockers/${id}/${action}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionId: "ADMIN_OVERRIDE" })
-        }).then(res => res.json());
-        alert(res.message);
-        loadLockers();
-    } catch (e) { alert("Lỗi kết nối đến tủ đồ."); }
-}
-
-// ==========================================
-// 5. DASHBOARD & BIỂU ĐỒ
-// ==========================================
-
-async function loadDashboard() {
-    try {
-        const [lockers, tickets] = await Promise.all([
-            fetch(`${API}/lockers`).then(res => res.json()),
-            fetch(`${API}/tickets`).then(res => res.json())
-        ]);
-
-        const setVal = (id, val) => { if (document.getElementById(id)) document.getElementById(id).innerText = val; };
-
-        setVal("total", lockers.length);
-        setVal("free", lockers.filter(l => l.status === "FREE").length);
-        setVal("occupied", lockers.filter(l => l.status === "IN_USE").length);
-        setVal("error", lockers.filter(l => l.status === "ERROR").length);
-        setVal("supportCount", tickets.filter(t => t.status !== "RESOLVED").length);
-
-        // Biểu đồ
-        const ctx = document.getElementById("chart");
-        if (ctx) {
-            const stats = [
-                lockers.filter(l => l.status === "FREE").length,
-                lockers.filter(l => l.status === "IN_USE").length,
-                lockers.filter(l => l.status === "ERROR").length
-            ];
-            if (chartInstance) chartInstance.destroy();
-            chartInstance = new Chart(ctx, {
-                type: 'doughnut',
-                data: {
-                    labels: ['Trống', 'Đang dùng', 'Lỗi'],
-                    datasets: [{
-                        data: stats,
-                        backgroundColor: ['#22c55e', '#f59e0b', '#ef4444']
-                    }]
-                },
-                options: { responsive: true, maintainAspectRatio: false }
-            });
-        }
-
-        // Layout trực quan
-        const layout = document.getElementById("layout");
-        if (layout) {
-            layout.innerHTML = lockers.map(l => `
-                <div class="locker status-${l.status.toLowerCase()}" title="Vị trí: ${l.location}">${l.id}</div>
-            `).join("");
-        }
-    } catch (e) { console.error("Lỗi Dashboard:", e); }
-}
-
-function closeModal() {
-    const modal = document.getElementById("lockerModal");
-    if (modal) modal.style.display = "none";
-}
-/*
-// const API = "http://localhost:8080/api"; // Tạm thời đóng API thật
-let chartInstance = null;
-
-// DỮ LIỆU MẪU (MOCK DATA)
-const mockLockers = [
-    { id: "L01", location: "Khu A - Tầng 1", status: "FREE" },
-    { id: "L02", location: "Khu A - Tầng 1", status: "IN_USE" },
-    { id: "L03", location: "Khu A - Tầng 1", status: "ERROR" },
-    { id: "L04", location: "Khu B - Tầng 2", status: "FREE" },
-    { id: "L05", location: "Khu B - Tầng 2", status: "IN_USE" },
-    { id: "L06", location: "Khu B - Tầng 2", status: "FREE" },
-    { id: "L07", location: "Khu C - Tầng 1", status: "FREE" },
-    { id: "L08", location: "Khu C - Tầng 1", status: "ERROR" }
-];
-
-const mockSessions = [
-    { id: "S001", locker_id: "L02", palm_hash: "hash_99a5b...", start_time: "2026-03-15T08:30:00", end_time: null },
-    { id: "S002", locker_id: "L05", palm_hash: "hash_22c81...", start_time: "2026-03-15T09:00:00", end_time: "2026-03-15T10:15:00" }
-];
-
-const mockTickets = [
-    { id: "TK01", locker_id: "L03", created_at: "2026-03-15T07:20:00", reason: "Tủ kẹt khóa không mở được", status: "OPEN" },
-    { id: "TK02", locker_id: "L08", created_at: "2026-03-14T15:45:00", reason: "Lỗi cảm biến nhận diện", status: "RESOLVED" }
-];
-
-document.addEventListener("DOMContentLoaded", () => {
-    loadPageData();
-});
-
-function loadPageData() {
-    const page = window.location.pathname.split("/").pop();
-    if (page === "index.html" || page === "") loadDashboard();
-    if (page === "lockers.html") loadLockers();
-    if (page === "users.html") loadSessions();
-    if (page === "support.html") loadTickets();
-}
-
-// 1. QUẢN LÝ LOCKER
-async function loadLockers() {
-    const data = mockLockers; // Dùng dữ liệu mẫu
-    const tbody = document.getElementById("lockerTable");
-    if (!tbody) return;
-    tbody.innerHTML = data.map(l => `
-        <tr>
-            <td><strong>${l.id}</strong></td>
-            <td>${l.location}</td>
-            <td class="status-${l.status.toLowerCase()}">${l.status}</td>
-            <td>
-                <button onclick="alert('Mở tủ ${l.id}')">Mở</button>
-                <button style="background:#64748b" onclick="alert('Đóng tủ ${l.id}')">Đóng</button>
-                <button style="background:#475569">Sửa</button>
-                <button style="background:#ef4444">Xóa</button>
-            </td>
-        </tr>
-    `).join("");
-}
-
-// 2. QUẢN LÝ SESSION
-async function loadSessions() {
-    const data = mockSessions; // Dùng dữ liệu mẫu
-    const tbody = document.getElementById("sessionTable");
-    if (!tbody) return;
-    tbody.innerHTML = data.map(s => `
-        <tr>
-            <td>${s.id}</td>
-            <td>${s.locker_id}</td>
-            <td title="${s.palm_hash}" style="color:#3b82f6; cursor:help;">Xem mã băm</td>
-            <td>${new Date(s.start_time).toLocaleString('vi-VN')}</td>
-            <td>${s.end_time ? new Date(s.end_time).toLocaleString('vi-VN') : '<span style="color:green; font-weight:bold;">Đang dùng</span>'}</td>
-            <td><button style="background:#f59e0b">Kết thúc</button></td>
-        </tr>
-    `).join("");
-}
-
-// 3. QUẢN LÝ TICKET
-async function loadTickets() {
-    const data = mockTickets; // Dùng dữ liệu mẫu
-    const tbody = document.getElementById("supportTable");
-    if (!tbody) return;
-    tbody.innerHTML = data.map(t => `
-        <tr>
-            <td>${t.id}</td>
-            <td>${t.locker_id}</td>
-            <td>${new Date(t.created_at).toLocaleString('vi-VN')}</td>
-            <td>${t.reason}</td>
-            <td class="status-${t.status.toLowerCase()}">${t.status}</td>
-            <td><button>Giải quyết</button></td>
-        </tr>
-    `).join("");
-}
-
-// 4. DASHBOARD
-async function loadDashboard() {
-    const lockers = mockLockers;
-    const tickets = mockTickets;
-
-    const setVal = (id, val) => { if (document.getElementById(id)) document.getElementById(id).innerText = val; };
-
-    setVal("total", lockers.length);
-    setVal("free", lockers.filter(l => l.status === "FREE").length);
-    setVal("occupied", lockers.filter(l => l.status === "IN_USE").length);
-    setVal("error", lockers.filter(l => l.status === "ERROR").length);
-    setVal("supportCount", tickets.filter(t => t.status === "OPEN").length);
-
-    // Vẽ biểu đồ Chart.js
-    const ctx = document.getElementById("chart");
-    if (ctx) {
-        if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Trống', 'Đang dùng', 'Lỗi'],
-                datasets: [{
-                    data: [
-                        lockers.filter(l => l.status === "FREE").length,
-                        lockers.filter(l => l.status === "IN_USE").length,
-                        lockers.filter(l => l.status === "ERROR").length
-                    ],
-                    backgroundColor: ['#22c55e', '#f59e0b', '#ef4444']
-                }]
-            },
-            options: { responsive: true, maintainAspectRatio: false }
-        });
-    }
-
-    // Vẽ sơ đồ tủ
-    const layout = document.getElementById("layout");
-    if (layout) {
-        layout.innerHTML = lockers.map(l => `
-            <div class="locker status-${l.status.toLowerCase()}" title="${l.location}">${l.id}</div>
-        `).join("");
-    }
-}
-
-// Modal functions
-function showLockerModal() { document.getElementById("lockerModal").style.display = "block"; }
-function closeModal() { document.getElementById("lockerModal").style.display = "none"; }
-*/
