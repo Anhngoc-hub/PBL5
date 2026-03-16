@@ -37,72 +37,169 @@ function getStatusClass(status) {
     if (!status) return "free";
     const s = status.toUpperCase();
     if (s === "FREE" || s === "AVAILABLE") return "free";
-    if (s === "OCCUPIED" || s === "IN_USE") return "in-use";
+    if (s === "OCCUPIED") return "in-use";
     if (s === "ERROR") return "error";
     return s.toLowerCase();
 }
 
 // ==========================================
-// 2. QUẢN LÝ LOCKER (TRANG lockers.html)
+// 2. HÀM HỆ THỐNG (THÔNG BÁO LỖI KIỂU WINDOWS)
+// ==========================================
+function showErrorDialog(message) {
+    const dialog = document.getElementById("errorDialog");
+    const msg = document.getElementById("errorDialogMessage");
+    if (dialog && msg) {
+        msg.innerText = message;
+        dialog.style.display = "flex";
+    } else {
+        alert(message); // Backup nếu thiếu HTML
+    }
+}
+
+function closeErrorDialog() {
+    const dialog = document.getElementById("errorDialog");
+    if (dialog) dialog.style.display = "none";
+}
+
+// ==========================================
+// 3. QUẢN LÝ LOCKER (TRANG lockers.html)
 // ==========================================
 
-// Hàm mở Modal để THÊM MỚI
+// Hàm vẽ bảng (Dùng chung cho Load và Search)
+function renderTable(data) {
+    const tbody = document.getElementById("lockerTable");
+    if (!tbody) return;
+
+    if (data.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = data.map(l => {
+        // Kiểm tra xem trạng thái có phải là OCCUPIED không (không phân biệt hoa thường)
+        const isOccupied = l.status && l.status.toUpperCase() === "OCCUPIED";
+
+        return `
+            <tr>
+                <td><strong>${l.id}</strong></td>
+                <td>${l.location || 'Chưa xác định'}</td>
+                <td class="status-${getStatusClass(l.status)}">${l.status}</td>
+                <td>
+                    ${isOccupied ? `<button style="background:#3b82f6" onclick="showTicketModal('${l.id}')">Mở</button>` : ''}
+                    
+                    <button style="background:#475569" onclick="showEditLocker('${l.id}')">Sửa</button>
+                    <button style="background:#ef4444" onclick="deleteLocker('${l.id}')">Xóa</button>
+                </td>
+            </tr>
+        `;
+    }).join("");
+}
+
+async function loadLockers() {
+    try {
+        const data = await fetch(ENDPOINTS.LOCKERS).then(res => res.json());
+        renderTable(data);
+    } catch (e) { console.error("Lỗi tải danh sách tủ:", e); }
+}
+
+// TÌM KIẾM VÀ LỌC (GỌI BACKEND)
+async function filterLockers() {
+    const keyword = document.getElementById("lockerSearch").value.trim();
+    const status = document.getElementById("statusFilter").value;
+
+    try {
+        const url = `${ENDPOINTS.LOCKERS}/search?keyword=${encodeURIComponent(keyword)}&status=${status}`;
+        const response = await fetch(url);
+        if (!response.ok) throw new Error();
+        const results = await response.json();
+        renderTable(results);
+    } catch (e) {
+        showErrorDialog("Lỗi khi tìm kiếm dữ liệu từ hệ thống!");
+    }
+}
+
+async function resetFilters() {
+    document.getElementById("lockerSearch").value = "";
+    document.getElementById("statusFilter").value = "ALL";
+    await loadLockers();
+}
+function showTicketModal(lockerId) {
+    const modal = document.getElementById("ticketModal");
+    if (!modal) return;
+
+    // 1. Hiển thị mã tủ
+    document.getElementById("displayLockerId").innerText = "#" + lockerId;
+    document.getElementById("ticketLockerId").value = lockerId;
+
+    // 2. TỰ ĐỘNG LẤY THỜI GIAN HIỆN TẠI (FORMAT: Ngày/Tháng/Năm Giờ:Phút)
+    const now = new Date();
+    const timeString = now.toLocaleString('vi-VN');
+    document.getElementById("ticketTime").value = timeString;
+
+    // 3. Reset lý do và hiện Modal
+    document.getElementById("ticketReason").value = "";
+    modal.style.display = "block";
+}
+
+function closeTicketModal() {
+    const modal = document.getElementById("ticketModal");
+    if (modal) modal.style.display = "none";
+}
 function showLockerModal() {
     const modal = document.getElementById("lockerModal");
     if (!modal) return;
-
     document.getElementById("modalTitle").innerText = "Thêm Tủ Đồ Mới";
-    document.getElementById("editFlag").value = ""; // Rỗng = Thêm mới
-
-    const idInput = document.getElementById("lockerId");
-    if (idInput) {
-        idInput.value = "";
-        idInput.disabled = false; // Cho phép nhập ID tay
-    }
-
+    document.getElementById("editFlag").value = "";
+    const idGroup = document.getElementById("idInputGroup");
+    if (idGroup) idGroup.style.display = "none";
     document.getElementById("lockerLocation").value = "";
     document.getElementById("statusGroup").style.display = "none";
     modal.style.display = "block";
 }
 
-// Hàm mở Modal để CHỈNH SỬA
 async function showEditLocker(id) {
     try {
         const l = await fetch(`${ENDPOINTS.LOCKERS}/${id}`).then(res => res.json());
         const modal = document.getElementById("lockerModal");
         if (!modal) return;
-
         document.getElementById("modalTitle").innerText = "Cập Nhật Tủ #" + id;
         document.getElementById("editFlag").value = "EDIT";
-
+        const idGroup = document.getElementById("idInputGroup");
+        if (idGroup) idGroup.style.display = "block";
         const idInput = document.getElementById("lockerId");
         if (idInput) {
             idInput.value = id;
-            idInput.disabled = true; // Khóa ID khi sửa
+            idInput.disabled = true;
         }
-
         document.getElementById("lockerLocation").value = l.location || "";
         document.getElementById("lockerStatus").value = l.status;
         document.getElementById("statusGroup").style.display = "block";
         modal.style.display = "block";
-    } catch (e) { alert("Không tìm thấy thông tin tủ."); }
+    } catch (e) { showErrorDialog("Không tìm thấy thông tin tủ."); }
 }
 
-// Hàm LƯU DỮ LIỆU (POST/PUT)
 async function saveLocker() {
-    const isEdit = document.getElementById("editFlag").value === "EDIT";
-    const id = document.getElementById("lockerId").value;
-    const location = document.getElementById("lockerLocation").value;
-    const status = document.getElementById("lockerStatus").value;
+    const editFlagEl = document.getElementById("editFlag");
+    const locationEl = document.getElementById("lockerLocation");
+    const statusEl = document.getElementById("lockerStatus");
+    const idEl = document.getElementById("lockerId");
+    const errorEl = document.getElementById("error-message");
 
-    if (!id || !location) {
-        alert("Vui lòng nhập đầy đủ Mã tủ (ID) và Vị trí!");
+    if (errorEl) errorEl.style.display = "none";
+
+    if (!locationEl.value.trim()) {
+        if (errorEl) {
+            errorEl.innerText = "⚠️ Bạn chưa nhập vị trí tủ!";
+            errorEl.style.display = "block";
+        }
         return;
     }
 
+    const isEdit = editFlagEl.value === "EDIT";
+    const id = idEl ? idEl.value : "";
+    const bodyData = isEdit ? { location: locationEl.value, status: statusEl.value } : { location: locationEl.value };
     const method = isEdit ? "PUT" : "POST";
     const url = isEdit ? `${ENDPOINTS.LOCKERS}/${id}` : ENDPOINTS.LOCKERS;
-    const bodyData = isEdit ? { location, status } : { id, location };
 
     try {
         const response = await fetch(url, {
@@ -115,30 +212,11 @@ async function saveLocker() {
             closeModal();
             loadLockers();
         } else {
-            alert("Lỗi: Mã tủ (ID) có thể đã tồn tại!");
+            showErrorDialog("Vị trí này đã có tủ đồ rồi, Toàn chọn chỗ khác nhé!");
         }
-    } catch (e) { alert("Lỗi kết nối server."); }
-}
-
-async function loadLockers() {
-    try {
-        const data = await fetch(ENDPOINTS.LOCKERS).then(res => res.json());
-        const tbody = document.getElementById("lockerTable");
-        if (!tbody) return;
-
-        tbody.innerHTML = data.map(l => `
-            <tr>
-                <td><strong>${l.id}</strong></td>
-                <td>${l.location || 'Chưa xác định'}</td>
-                <td class="status-${getStatusClass(l.status)}">${l.status}</td>
-                <td>
-                    <button style="background:#3b82f6" onclick="handleLockerControl('${l.id}', 'open')">Mở</button>
-                    <button style="background:#475569" onclick="showEditLocker('${l.id}')">Sửa</button>
-                    <button style="background:#ef4444" onclick="deleteLocker('${l.id}')">Xóa</button>
-                </td>
-            </tr>
-        `).join("");
-    } catch (e) { console.error("Lỗi tải danh sách tủ:", e); }
+    } catch (e) {
+        showErrorDialog("Lỗi kết nối server rồi!");
+    }
 }
 
 async function deleteLocker(id) {
@@ -149,11 +227,13 @@ async function deleteLocker(id) {
 
 function closeModal() {
     const modal = document.getElementById("lockerModal");
+    const errorEl = document.getElementById("error-message");
     if (modal) modal.style.display = "none";
+    if (errorEl) errorEl.style.display = "none";
 }
 
 // ==========================================
-// 3. DASHBOARD, SESSIONS & TICKETS
+// 4. DASHBOARD, SESSIONS & TICKETS
 // ==========================================
 async function loadDashboard() {
     try {

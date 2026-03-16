@@ -1,12 +1,13 @@
 package com.example.PBL5.service;
 
+import java.util.List;
+
+import org.springframework.stereotype.Service;
+
 import com.example.PBL5.dto.updateLocker;
 import com.example.PBL5.entity.Locker;
 import com.example.PBL5.repository.LockerRepository;
 import com.example.PBL5.utils.IdGenerator;
-import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 public class LockerService {
@@ -14,18 +15,20 @@ public class LockerService {
     public LockerService(LockerRepository lockerRepository) {
         this.lockerRepository = lockerRepository;// gan obj cho bien cua class Service
     }
-    public Locker createLocker(Locker locker){
+    public Locker createLocker(Locker locker) {
+        if (lockerRepository.existsByLocation(locker.getLocation())) {
+            throw new RuntimeException("Vị trí này đã có tủ đồ rồi!");
+        }
 
         Locker lastLocker = lockerRepository.findTopByOrderByIdDesc();
-
         String lastId = null;
-
-        if (lastLocker != null){
+        if (lastLocker != null) {
             lastId = lastLocker.getId();
         }
 
         String newId = IdGenerator.generateId(lastId, "LK");
         locker.setId(newId);
+        
         return lockerRepository.save(locker);
     }
     public List<Locker> getAllLockers() {
@@ -57,5 +60,11 @@ public class LockerService {
         }
         lockerRepository.delete(locker);
     }
+    public List<Locker> searchLockers(String keyword, String status) {
+    if (status == null || status.equals("ALL")) {
+        return lockerRepository.searchAllStatus(keyword);
+    }
+    return lockerRepository.searchWithStatus(keyword, status);
+}
 
 }

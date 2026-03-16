@@ -15,7 +15,6 @@
         <a href="lockers.html" class="active">📦 Quản lý Tủ đồ</a>
         <a href="users.html">🕒 Phiên sử dụng</a>
         <a href="support.html">📩 Quản lý Ticket</a>
-        <a href="report.html">⚠️ Báo cáo lỗi</a>
     </div>
 
     <div class="main">
@@ -26,12 +25,29 @@
             <button class="btn-add" onclick="showLockerModal()">+ Thêm Tủ Mới</button>
         </header>
 
-        <div class="toolbar" style="margin-top: 20px;">
-            <input type="text" id="lockerSearch" placeholder="Tìm kiếm mã tủ hoặc vị trí..."
-                style="padding: 10px; width: 300px; border-radius: 8px; border: 1px solid #cbd5e1;">
+        <div class="toolbar">
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label>Từ khóa:</label>
+                <input type="text" id="lockerSearch" placeholder="Mã tủ hoặc vị trí...">
+            </div>
+
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label>Trạng thái:</label>
+                <select id="statusFilter">
+                    <option value="ALL">-- Tất cả --</option>
+                    <option value="AVAILABLE">AVAILABLE (Trống)</option>
+                    <option value="OCCUPIED">OCCUPIED (Đang dùng)</option>
+                    <option value="ERROR">ERROR (Lỗi)</option>
+                </select>
+            </div>
+
+            <div style="display: flex; gap: 8px; margin-top: 20px;">
+                <button onclick="filterLockers()" style="background: #3b82f6;">🔍 Tìm kiếm</button>
+                <button onclick="resetFilters()" class="btn-cancel">🔄 Làm mới</button>
+            </div>
         </div>
 
-        <div class="table-container" style="margin-top: 20px;">
+        <div class="table-container">
             <table>
                 <thead>
                     <tr>
@@ -56,9 +72,13 @@
             <hr>
             <input type="hidden" id="editFlag">
 
+            <div id="error-message"
+                style="display: none; color: #ef4444; background: #fee2e2; padding: 10px; border-radius: 6px; margin-bottom: 15px; font-size: 14px; border: 1px solid #fecaca; text-align: center; font-weight: bold;">
+            </div>
+
             <div class="form-group" id="idInputGroup">
                 <label for="lockerId">Mã tủ (ID):</label>
-                <input type="text" id="lockerId" placeholder="Ví dụ: LK099">
+                <input type="text" id="lockerId" disabled>
             </div>
 
             <div class="form-group">
@@ -78,6 +98,50 @@
             <div class="modal-actions">
                 <button class="btn-save" onclick="saveLocker()">Lưu thông tin</button>
                 <button class="btn-cancel" onclick="closeModal()">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="ticketModal" class="modal">
+        <div class="modal-content">
+            <h2>Báo Cáo Sự Cố Tủ <span id="displayLockerId" style="color: #3b82f6;"></span></h2>
+            <hr>
+
+            <div class="form-group">
+                <label>Mã tủ bị lỗi:</label>
+                <input type="text" id="ticketLockerId" disabled>
+            </div>
+
+            <div class="form-group">
+                <label>Thời gian tạo báo cáo:</label>
+                <input type="text" id="ticketTime" disabled>
+            </div>
+
+            <div class="form-group">
+                <label for="ticketReason">Lý do/Nội dung sự cố:</label>
+                <textarea id="ticketReason" rows="4"
+                    placeholder="Ví dụ: Tủ không mở được dù đã quét vân tay, kẹt khóa..."></textarea>
+            </div>
+
+            <div class="modal-actions">
+                <button class="btn-save" onclick="submitTicket()">Gửi Báo Cáo</button>
+                <button class="btn-cancel" onclick="closeTicketModal()">Hủy bỏ</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="errorDialog" class="error-dialog-overlay" style="display: none;">
+        <div class="error-dialog-box">
+            <div class="error-dialog-header">
+                <span>ERROR</span>
+                <button class="close-x" onclick="closeErrorDialog()">×</button>
+            </div>
+            <div class="error-dialog-body">
+                <div class="error-icon">×</div>
+                <p id="errorDialogMessage">An unexpected error has occurred!</p>
+            </div>
+            <div class="error-dialog-footer">
+                <button class="btn-ok" onclick="closeErrorDialog()">OK</button>
             </div>
         </div>
     </div>

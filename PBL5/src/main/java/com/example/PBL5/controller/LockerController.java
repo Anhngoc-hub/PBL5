@@ -1,12 +1,21 @@
 package com.example.PBL5.controller;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.PBL5.dto.createLocker;
 import com.example.PBL5.dto.updateLocker;
 import com.example.PBL5.entity.Locker;
 import com.example.PBL5.service.LockerService;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
 @RequestMapping("/lockers")
@@ -47,6 +56,12 @@ public class LockerController {
         lockerService.deleteLocker(id);
         return "deleted";
     }
+    @GetMapping("/search")
+public List<Locker> searchLockers(
+        @RequestParam(defaultValue = "") String keyword, 
+        @RequestParam(defaultValue = "ALL") String status) {
+    return lockerService.searchLockers(keyword, status);
+}
 }
 
 

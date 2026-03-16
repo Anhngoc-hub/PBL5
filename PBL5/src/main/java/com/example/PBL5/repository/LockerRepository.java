@@ -1,9 +1,20 @@
 package com.example.PBL5.repository;
 
-import com.example.PBL5.entity.Locker;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+
+import com.example.PBL5.entity.Locker;
 
 public interface LockerRepository extends JpaRepository<Locker, String> {
-Locker findTopByOrderByIdDesc();
-Locker findTopByStatus(String status);
+    Locker findTopByOrderByIdDesc();
+    Locker findTopByStatus(String status);
+    boolean existsByLocation(String location);
+    @Query("SELECT l FROM Locker l WHERE (l.id LIKE %:keyword% OR l.location LIKE %:keyword%) AND l.status = :status")
+    List<Locker> searchWithStatus(@Param("keyword") String keyword, @Param("status") String status);
+
+    @Query("SELECT l FROM Locker l WHERE l.id LIKE %:keyword% OR l.location LIKE %:keyword%")
+    List<Locker> searchAllStatus(@Param("keyword") String keyword);
 }
