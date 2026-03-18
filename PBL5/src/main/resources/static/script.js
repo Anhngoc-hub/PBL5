@@ -13,9 +13,11 @@ let chartInstance = null;
 // Khởi tạo khi trang web tải xong
 document.addEventListener("DOMContentLoaded", () => {
     loadPageData();
-    // Tự động làm mới dữ liệu mỗi 10 giây
-    setInterval(loadPageData, 10000);
-    setupTicketForm();
+    // Tự động làm mới mỗi 15 giây (tránh làm phiền khi đang nhập liệu)
+    setInterval(() => {
+        const isModalOpen = document.querySelector('.modal[style*="display: block"]');
+        if (!isModalOpen) loadPageData();
+    }, 15000);
 });
 
 // Điều hướng tải dữ liệu dựa trên URL
@@ -126,24 +128,15 @@ async function resetFilters() {
 function showTicketModal(lockerId) {
     const modal = document.getElementById("ticketModal");
     if (!modal) return;
-
-    // 1. Hiển thị mã tủ
     document.getElementById("displayLockerId").innerText = "#" + lockerId;
     document.getElementById("ticketLockerId").value = lockerId;
-
-    // 2. TỰ ĐỘNG LẤY THỜI GIAN HIỆN TẠI (FORMAT: Ngày/Tháng/Năm Giờ:Phút)
-    const now = new Date();
-    const timeString = now.toLocaleString('vi-VN');
-    document.getElementById("ticketTime").value = timeString;
-
-    // 3. Reset lý do và hiện Modal
+    document.getElementById("ticketTime").value = new Date().toLocaleString('vi-VN');
     document.getElementById("ticketReason").value = "";
     modal.style.display = "block";
 }
 
 function closeTicketModal() {
-    const modal = document.getElementById("ticketModal");
-    if (modal) modal.style.display = "none";
+    document.getElementById("ticketModal").style.display = "none";
 }
 function showLockerModal() {
     const modal = document.getElementById("lockerModal");
@@ -320,34 +313,38 @@ async function loadTickets() {
         `).join("");
     } catch (e) { console.error("Lỗi tải ticket:", e); }
 }
+async function submitTicket() {
+    const lockerId = document.getElementById("ticketLockerId").value;
+    const reason = document.getElementById("ticketReason").value;
 
-async function handleLockerControl(id, action) {
+    if (!reason.trim()) {
+        showErrorDialog("Vui lòng nhập lý do!");
+        return;
+    }
+
     try {
-        const res = await fetch(`${ENDPOINTS.LOCKERS}/${id}/${action}`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ sessionId: "ADMIN_OVER_WRITE" })
-        }).then(res => res.json());
-        alert(res.message || "Lệnh đã được gửi đi!");
-        loadLockers();
-    } catch (e) { alert("Lỗi điều khiển tủ đồ."); }
+        // Sửa lại thành ${lockerId} cho khớp với biến ở trên
+        const url = `http://localhost:8080/lockers/open?id=${lockerId}`;
+
+        const res = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Accept": "application/json"
+            }
+        });
+
+        if (res.ok) {
+            closeTicketModal();
+            alert("✅ Đã gửi lệnh mở tủ khẩn cấp thành công!");
+            loadLockers();
+        } else {
+            showErrorDialog("Không thể thực hiện lệnh mở tủ!");
+        }
+    } catch (e) {
+        // In lỗi thật ra F12 Console để dễ tìm nguyên nhân
+        console.error("Lỗi thật sự là:", e);
+        showErrorDialog("Lỗi kết nối Server!");
+    }
 }
 
-function setupTicketForm() {
-    const form = document.getElementById("ticketForm");
-    if (!form) return;
-    form.onsubmit = async (e) => {
-        e.preventDefault();
-        const session_id = document.getElementById("ticketLockerId").value;
-        const reason = document.getElementById("ticketReason").value;
-        try {
-            await fetch(ENDPOINTS.TICKETS, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ session_id, reason, status: "OPEN" })
-            });
-            document.getElementById("responseMessage").innerText = "✅ Đã gửi báo cáo lỗi thành công!";
-            form.reset();
-        } catch (e) { document.getElementById("responseMessage").innerText = "❌ Lỗi kết nối server."; }
-    };
-}
+

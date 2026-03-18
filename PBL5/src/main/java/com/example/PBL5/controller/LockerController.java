@@ -16,11 +16,17 @@ import com.example.PBL5.dto.createLocker;
 import com.example.PBL5.dto.updateLocker;
 import com.example.PBL5.entity.Locker;
 import com.example.PBL5.service.LockerService;
+import org.springframework.web.client.RestTemplate;
 
 @RestController
 @RequestMapping("/lockers")
 public class LockerController {
     private final LockerService lockerService;
+
+    private static final String ESP32_IP = "http://172.20.10.5";
+
+    // Công cụ để Server gọi API sang con ESP32
+    private final RestTemplate restTemplate = new RestTemplate();
 
     public LockerController(LockerService lockerService) {
         this.lockerService = lockerService;
@@ -61,6 +67,27 @@ public class LockerController {
             @RequestParam(defaultValue = "") String keyword,
             @RequestParam(defaultValue = "ALL") String status) {
         return lockerService.searchLockers(keyword, status);
+    }
+
+    // API mở locker (Khớp 100% với link fetch ở Frontend của bạn)
+    @GetMapping("/open")
+    public String openLocker(@RequestParam String id) {
+        try {
+            String doorNumber = String.valueOf(Integer.parseInt(id.replaceAll("\\D+", "")));
+            // Server gõ cửa IP của ESP32
+            String url = ESP32_IP + "/open?locker=" + doorNumber;
+            System.out.println(doorNumber);
+
+            // Lấy câu trả lời từ ESP32 về
+            String response = restTemplate.getForObject(url, String.class);
+            System.out.println(response);
+
+            return "Locker " + id + " -> " + response;
+
+        } catch (Exception e) {
+            // Nếu con ESP32 bị rút điện hoặc đổi Wi-Fi
+            return "ESP32 offline";
+        }
     }
 }
 

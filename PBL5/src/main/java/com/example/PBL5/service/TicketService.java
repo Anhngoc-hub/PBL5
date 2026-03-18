@@ -7,12 +7,11 @@ import com.example.PBL5.repository.LockerRepository;
 import com.example.PBL5.repository.SessionRepository;
 import com.example.PBL5.repository.TicketRepository;
 import com.example.PBL5.utils.IdGenerator;
-import com.example.PBL5.websocket.LockerWebSocketHandler;
+import com.example.PBL5.websocket.LockerServer;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
-import java.util.Optional;
 
 @Service
 public class TicketService {
@@ -22,8 +21,7 @@ private TicketRepository ticketRepository;
 private SessionRepository sessionRepository;
 @Autowired
 private LockerRepository lockerRepository;
-@Autowired
-private LockerWebSocketHandler lockerWebSocketHandler;
+LockerServer lockerServer;
 
 public void adminForceOpen(String lockerId, String reason) {
    Locker locker = lockerRepository.findById(lockerId)
@@ -48,9 +46,7 @@ public void adminForceOpen(String lockerId, String reason) {
    ticket.setCreated_at(LocalDateTime.now());
 
    ticketRepository.save(ticket);
-
-    lockerWebSocketHandler.sendOpenCommand(lockerId);
-
+   lockerServer.openLocker(locker.getId());
 }
 
 }
