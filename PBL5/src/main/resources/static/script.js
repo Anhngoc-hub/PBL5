@@ -323,25 +323,26 @@ async function submitTicket() {
     }
 
     try {
-        // Sửa lại thành ${lockerId} cho khớp với biến ở trên
-        const url = `http://localhost:8080/lockers/open?id=${lockerId}`;
-
-        const res = await fetch(url, {
-            method: "GET",
+        const res = await fetch("http://localhost:8080/lockers/open", {
+            method: "POST",
             headers: {
-                "Accept": "application/json"
-            }
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                lockerId: lockerId,
+                reason: reason
+            })
         });
 
         if (res.ok) {
             closeTicketModal();
-            alert("✅ Đã gửi lệnh mở tủ khẩn cấp thành công!");
+            alert("✅ Đã gửi lệnh mở tủ + lưu ticket thành công!");
             loadLockers();
         } else {
             showErrorDialog("Không thể thực hiện lệnh mở tủ!");
         }
+
     } catch (e) {
-        // In lỗi thật ra F12 Console để dễ tìm nguyên nhân
         console.error("Lỗi thật sự là:", e);
         showErrorDialog("Lỗi kết nối Server!");
     }
