@@ -9,7 +9,6 @@ const ENDPOINTS = {
 };
 
 let chartInstance = null;
-
 // Khởi tạo khi trang web tải xong
 document.addEventListener("DOMContentLoaded", () => {
     loadPageData();
@@ -275,24 +274,6 @@ async function loadDashboard() {
     } catch (e) { console.error("Lỗi Dashboard:", e); }
 }
 
-async function loadSessions() {
-    try {
-        const data = await fetch(ENDPOINTS.SESSIONS).then(res => res.json());
-        const tbody = document.getElementById("sessionTable");
-        if (!tbody) return;
-        tbody.innerHTML = data.map(s => `
-            <tr>
-                <td>${s.id}</td>
-                <td>${s.locker_id || 'N/A'}</td>
-                <td style="font-family:monospace; color:#3b82f6;">${s.palm_hash || '---'}</td>
-                <td>${s.start_time ? new Date(s.start_time).toLocaleString('vi-VN') : '---'}</td>
-                <td>${s.end_time ? new Date(s.end_time).toLocaleString('vi-VN') : '<span style="color:green; font-weight:bold;">ĐANG DÙNG</span>'}</td>
-                <td><button style="background:#f59e0b" onclick="finishSession('${s.id}')">Kết thúc</button></td>
-            </tr>
-        `).join("");
-    } catch (e) { console.error("Lỗi tải phiên sử dụng:", e); }
-}
-
 async function loadTickets() {
     try {
         const data = await fetch(ENDPOINTS.TICKETS).then(res => res.json());
@@ -347,5 +328,74 @@ async function submitTicket() {
         showErrorDialog("Lỗi kết nối Server!");
     }
 }
+// 1. Tìm kiếm và Sắp xếp (Thay thế hoàn toàn cho logic cũ)
+async function filterSessions() {
+    const lockerId = document.getElementById("sessionSearch").value.trim();
+    const status = document.getElementById("statusFilter").value;
+    const sortBy = document.getElementById("sortField").value; // "start_time" hoặc "end_time"
+
+    try {
+        const url = `http://localhost:8080/sessions/search?lockerId=${encodeURIComponent(lockerId)}&status=${status}&sortBy=${sortBy}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        renderSessionTable(data);
+    } catch (e) {
+        showErrorDialog("Lỗi truy xuất dữ liệu!");
+    }
+}
+
+// 2. Tải toàn bộ danh sách khi trang web vừa mở
+async function loadSessions() {
+    try {
+        const response = await fetch(ENDPOINTS.SESSIONS);
+        const data = await response.json();
+        renderSessionTable(data);
+    } catch (e) {
+        console.error("Lỗi tải phiên sử dụng:", e);
+    }
+}
 
 
+function renderSessionTable(data) {
+    const tbody = document.getElementById("sessionTable");
+    if (!tbody) return;
+
+    const list = Array.isArray(data) ? data : (data && data.id ? [data] : []);
+
+    if (list.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = list.map(s => {
+        // Tạo label màu sắc cho Status nhìn cho chuyên nghiệp
+        const statusColor = s.status === 'ACTIVE' ? '#22c55e' : '#64748b';
+
+        return `
+        <tr>
+            <td><strong>${s.id}</strong></td>
+            <td>${s.lockerId || 'N/A'}</td>
+            <td style="font-family:monospace; font-size:12px; color:#3b82f6;">${s.palm_hash || '---'}</td>
+            <td>${(s.start_time || s.startTime) ? new Date(s.start_time || s.startTime).toLocaleString('vi-VN') : '---'}</td>
+            <td>${(s.end_time || s.endTime) ? new Date(s.end_time || s.endTime).toLocaleString('vi-VN') : '---'}</td>
+            
+            <td>
+                <span style="background: ${statusColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
+                    ${s.status}
+                </span>
+            </td>
+
+            <td>
+                <button style="background:#f59e0b; border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer;" 
+                        onclick="finishSession('${s.id}')">Kết thúc</button>
+            </td>
+        </tr>
+    `}).join("");
+}
+// 4. Reset các bộ lọc về mặc định
+function resetSessionFilters() {
+    document.getElementById("sessionSearch").value = "";
+    document.getElementById("statusFilter").value = "ALL";
+    if (document.getElementById("sortField")) document.getElementById("sortField").value = "start_time";
+    loadSessions();
+}

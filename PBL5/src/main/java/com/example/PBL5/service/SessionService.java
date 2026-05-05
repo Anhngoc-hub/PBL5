@@ -1,17 +1,16 @@
 package com.example.PBL5.service;
 
-import com.example.PBL5.dto.PalmScanResponse;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.stream.Collectors;
+
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+
 import com.example.PBL5.dto.SessionResponse;
-import com.example.PBL5.entity.Locker;
 import com.example.PBL5.entity.Session;
 import com.example.PBL5.repository.LockerRepository;
 import com.example.PBL5.repository.SessionRepository;
-import com.example.PBL5.utils.IdGenerator;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Service
 public class SessionService {
@@ -24,18 +23,19 @@ public class SessionService {
     }
 
     private SessionResponse convertToDTO(Session session) {
-        SessionResponse response = new SessionResponse();
+    SessionResponse response = new SessionResponse();
+    response.setId(session.getId());
+    
+    // Gọi các getter mới
+    response.setStart_time(session.getStart_time()); 
+    response.setEnd_time(session.getEnd_time());
+    response.setStatus(session.getStatus());
 
-        response.setId(session.getId());
-        response.setStart_time(session.getStart_time());
-        response.setEnd_time(session.getEnd_time());
-        response.setStatus(session.getStatus());
-
-        if (session.getLocker() != null) {
-            response.setLockerId(session.getLocker().getId());
-        }
-        return response;
+    if (session.getLocker() != null) {
+        response.setLockerId(session.getLocker().getId());
     }
+    return response;
+}
 
     public List<SessionResponse> getAllSessions() {
         List<Session> sessions = sessionRepository.findAll();
@@ -66,16 +66,34 @@ public class SessionService {
         return convertToDTO(session);
     }
 
-    public List<SessionResponse> getActiveSessions() {
-        List<Session> sessions = sessionRepository.findByStatus("ACTIVE");
-        List<SessionResponse> result = new ArrayList<>();
+   
+    
+public List<SessionResponse> searchSessions(String lockerId, String status, String sortBy) {
+    // sortBy gửi lên sẽ là "start_time" hoặc "end_time", khớp 100% với Entity
+    String fieldName = sortBy;
+    if ("start_time".equals(sortBy)) fieldName = "startTime";
+    if ("end_time".equals(sortBy)) fieldName = "endTime";
 
-        for (Session session : sessions) {
-            result.add(convertToDTO(session));
-        }
-        return result;
+    Sort sort = Sort.by(Sort.Direction.ASC, fieldName);
+    
+    List<Session> sessions;
+    boolean hasLockerId = lockerId != null && !lockerId.isEmpty();
+    boolean hasStatus = status != null && !status.equalsIgnoreCase("ALL");
+
+    if (hasLockerId && hasStatus) {
+        sessions = sessionRepository.findByLockerIdAndStatus(lockerId, status, sort);
+    } else if (hasLockerId) {
+        sessions = sessionRepository.findByLockerId(lockerId, sort);
+    } else if (hasStatus) {
+        sessions = sessionRepository.findByStatus(status, sort);
+    } else {
+        sessions = sessionRepository.findAll(sort);
     }
 
+    return sessions.stream()
+                   .map(s -> this.convertToDTO(s)) 
+                   .collect(Collectors.toList());
+}
   /*  public PalmScanResponse scanPalm(String palmHash) {
         Session session = sessionRepository.findByPalmHashAndStatus(palmHash, "ACTIVE");
         if(session != null){
@@ -128,6 +146,7 @@ public class SessionService {
                 newId
         );
     }*/
+
 
     /*public SessionResponse createSession(String palmHash) {
         //check palm da co session chua

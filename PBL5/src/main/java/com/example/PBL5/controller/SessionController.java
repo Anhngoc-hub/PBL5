@@ -1,13 +1,15 @@
 package com.example.PBL5.controller;
 
-import com.example.PBL5.dto.PalmScanResponse;
-import com.example.PBL5.dto.SessionResponse;
-import com.example.PBL5.dto.PalmScanRequest;
-import com.example.PBL5.service.SessionService;
-import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
-import java.util.Map;
+
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.example.PBL5.dto.SessionResponse;
+import com.example.PBL5.service.SessionService;
 
 @RestController
 @RequestMapping("/sessions")
@@ -32,6 +34,13 @@ public class SessionController {
     public SessionResponse getCurrentSession(@PathVariable String lockerId) {
         return sessionService.getCurrentSession(lockerId);
     }
+    @GetMapping("/search")
+public List<SessionResponse> searchSessions(
+        @RequestParam(required = false) String lockerId, 
+        @RequestParam(required = false) String status,
+        @RequestParam(defaultValue = "startTime") String sortBy) { // Mặc định lọc theo startTime
+    return sessionService.searchSessions(lockerId, status, sortBy);
+}
     /*@PostMapping
     public SessionResponse createSession(@RequestBody PalmScanRequest request) {
         return sessionService.createSession(request.getPalmHash());
@@ -45,8 +54,6 @@ public class SessionController {
     public PalmScanResponse scanPalm(@RequestBody PalmScanRequest palmScanRequest) {
         return sessionService.scanPalm(palmScanRequest.getPalmHash());
     }*/
-    @GetMapping("/active")
-    public List<SessionResponse> getAllActiveSessions() {
-        return sessionService.getActiveSessions();
-    }
+    
+
 }
