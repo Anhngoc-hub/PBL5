@@ -122,6 +122,28 @@
                 <textarea id="ticketReason" rows="4"
                     placeholder="Ví dụ: Tủ không mở được dù đã quét vân tay, kẹt khóa..."></textarea>
             </div>
+            <div class="form-group">
+                <label>Danh sách hình ảnh lòng bàn tay:</label>
+                <div id="imageGallery" style="
+                display: grid; 
+                grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); 
+                gap: 10px; 
+                border: 2px dashed #cbd5e1;
+                border-radius: 10px;
+                padding: 10px;
+                background: #f1f5f9;
+                min-height: 150px;
+                max-height: 300px;
+                overflow-y: auto;">
+
+                    <!-- Ảnh sẽ được tự động chèn vào đây bằng Javascript -->
+                    <div id="imagePlaceholder"
+                        style="grid-column: 1 / -1; text-align: center; color: #64748b; padding-top: 40px;">
+                        <span style="font-size: 30px;">🖐️</span>
+                        <p style="font-size: 12px;">Đang tải danh sách ảnh...</p>
+                    </div>
+                </div>
+            </div>
 
             <div class="modal-actions">
                 <button class="btn-save" onclick="submitTicket()">Gửi Báo Cáo</button>

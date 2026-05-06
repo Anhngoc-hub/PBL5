@@ -1,21 +1,27 @@
 // ==========================================
 // 1. CẤU HÌNH ĐƯỜNG DẪN & BIẾN TOÀN CỤC
 // ==========================================
-const API = "";
+const API = "http://localhost:8080"; // Đã thêm cổng mặc định của Spring Boot
 const ENDPOINTS = {
     LOCKERS: `${API}/lockers`,
     SESSIONS: `${API}/sessions`,
-    TICKETS: `${API}/tickets`
+    TICKETS: `${API}/tickets`,
+    IMAGES: `${API}/sessions/images` // Endpoint để lấy ảnh từ Folder
 };
 
 let chartInstance = null;
+let isSearching = false; // Flag kiểm soát tự động làm mới
 // Khởi tạo khi trang web tải xong
 document.addEventListener("DOMContentLoaded", () => {
     loadPageData();
-    // Tự động làm mới mỗi 15 giây (tránh làm phiền khi đang nhập liệu)
+    // Tự động làm mới mỗi 15 giây
     setInterval(() => {
         const isModalOpen = document.querySelector('.modal[style*="display: block"]');
-        if (!isModalOpen) loadPageData();
+        // Chỉ làm mới nếu không mở Modal và không ở chế độ tìm kiếm
+        if (!isModalOpen && !isSearching) {
+            console.log("🔄 Tự động cập nhật dữ liệu...");
+            loadPageData();
+        }
     }, 15000);
 });
 
@@ -108,14 +114,15 @@ async function filterLockers() {
     const keyword = document.getElementById("lockerSearch").value.trim();
     const status = document.getElementById("statusFilter").value;
 
+    isSearching = (keyword !== "" || status !== "ALL");
+
     try {
         const url = `${ENDPOINTS.LOCKERS}/search?keyword=${encodeURIComponent(keyword)}&status=${status}`;
         const response = await fetch(url);
-        if (!response.ok) throw new Error();
         const results = await response.json();
         renderTable(results);
     } catch (e) {
-        showErrorDialog("Lỗi khi tìm kiếm dữ liệu từ hệ thống!");
+        showErrorDialog("Lỗi khi tìm kiếm dữ liệu!");
     }
 }
 
@@ -124,16 +131,62 @@ async function resetFilters() {
     document.getElementById("statusFilter").value = "ALL";
     await loadLockers();
 }
-function showTicketModal(lockerId) {
+async function showTicketModal(lockerId) {
     const modal = document.getElementById("ticketModal");
-    if (!modal) return;
+    const gallery = document.getElementById("imageGallery");
+    const placeholder = document.getElementById("imagePlaceholder");
+
+    // Hiện Modal và điền thông tin text
+    modal.style.display = "block";
     document.getElementById("displayLockerId").innerText = "#" + lockerId;
     document.getElementById("ticketLockerId").value = lockerId;
     document.getElementById("ticketTime").value = new Date().toLocaleString('vi-VN');
-    document.getElementById("ticketReason").value = "";
-    modal.style.display = "block";
-}
 
+    // Reset Gallery sạch sẽ trước khi tải ảnh mới
+    gallery.querySelectorAll('img').forEach(img => img.remove());
+    placeholder.style.display = "block";
+    placeholder.innerHTML = "⌛ Đang tìm phiên sử dụng gần nhất...";
+
+    try {
+        // 1. Lấy Session mới nhất của tủ này
+        // Lưu ý: Endpoint này phải trả về object có cả id (tên folder) và startTime
+        const sessionRes = await fetch(`http://localhost:8080/sessions/${lockerId}/current-session`);
+        if (!sessionRes.ok) throw new Error("Không tìm thấy session");
+        const session = await sessionRes.json();
+
+        if (session && session.id) {
+            placeholder.innerHTML = "⌛ Đang tải ảnh từ folder...";
+
+            // 2. Lấy danh sách URL ảnh từ folder thực tế
+            // Truyền id (session_177...) và startTime (2024-05-20...)
+            const imgRes = await fetch(`http://localhost:8080/sessions/images?sessionId=${session.id}&startTime=${session.startTime}`);
+            const imageUrls = await imgRes.json();
+
+            if (imageUrls && imageUrls.length > 0) {
+                placeholder.style.display = "none";
+                imageUrls.forEach(url => {
+                    const img = document.createElement("img");
+                    // URL từ Java trả về là đường dẫn tương đối, cần thêm prefix host
+                    img.src = `http://localhost:8080${url}`;
+
+                    img.style.width = "100%";
+                    img.style.borderRadius = "8px";
+                    img.style.marginBottom = "10px";
+                    img.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
+
+                    gallery.appendChild(img);
+                });
+            } else {
+                placeholder.innerHTML = "⚠️ Thư mục ảnh trống.";
+            }
+        } else {
+            placeholder.innerHTML = "⚠️ Tủ đồ này hiện không có dữ liệu phiên.";
+        }
+    } catch (e) {
+        console.error("Lỗi:", e);
+        placeholder.innerHTML = "⚠️ Không thể kết nối đến máy chủ ảnh.";
+    }
+}
 function closeTicketModal() {
     document.getElementById("ticketModal").style.display = "none";
 }
@@ -332,18 +385,23 @@ async function submitTicket() {
 async function filterSessions() {
     const lockerId = document.getElementById("sessionSearch").value.trim();
     const status = document.getElementById("statusFilter").value;
-    const sortBy = document.getElementById("sortField").value; // "start_time" hoặc "end_time"
+    const sortBy = document.getElementById("sortField").value;
+
+    // Bật flag để dừng auto-refresh
+    isSearching = (lockerId !== "" || status !== "ALL");
 
     try {
-        const url = `http://localhost:8080/sessions/search?lockerId=${encodeURIComponent(lockerId)}&status=${status}&sortBy=${sortBy}`;
+        const url = `${API}/sessions/search?lockerId=${encodeURIComponent(lockerId)}&status=${status}&sortBy=${sortBy}`;
         const res = await fetch(url);
+        if (!res.ok) throw new Error();
         const data = await res.json();
         renderSessionTable(data);
     } catch (e) {
-        showErrorDialog("Lỗi truy xuất dữ liệu!");
+        console.error(e);
+        // Tránh hiện dialog liên tục nếu do auto-refresh lỗi, chỉ hiện khi người dùng chủ động tìm
+        if (lockerId) showErrorDialog("Lỗi truy xuất dữ liệu!");
     }
 }
-
 // 2. Tải toàn bộ danh sách khi trang web vừa mở
 async function loadSessions() {
     try {
@@ -368,14 +426,13 @@ function renderSessionTable(data) {
     }
 
     tbody.innerHTML = list.map(s => {
-        // Tạo label màu sắc cho Status nhìn cho chuyên nghiệp
         const statusColor = s.status === 'ACTIVE' ? '#22c55e' : '#64748b';
 
         return `
         <tr>
             <td><strong>${s.id}</strong></td>
             <td>${s.lockerId || 'N/A'}</td>
-            <td style="font-family:monospace; font-size:12px; color:#3b82f6;">${s.palm_hash || '---'}</td>
+            <td style="font-family:monospace; font-size:12px; color:#3b82f6;">${s.palm_hash || s.palmHash || '---'}</td>
             <td>${(s.start_time || s.startTime) ? new Date(s.start_time || s.startTime).toLocaleString('vi-VN') : '---'}</td>
             <td>${(s.end_time || s.endTime) ? new Date(s.end_time || s.endTime).toLocaleString('vi-VN') : '---'}</td>
             
@@ -394,6 +451,7 @@ function renderSessionTable(data) {
 }
 // 4. Reset các bộ lọc về mặc định
 function resetSessionFilters() {
+    isSearching = false; // Tắt flag để tiếp tục auto-refresh
     document.getElementById("sessionSearch").value = "";
     document.getElementById("statusFilter").value = "ALL";
     if (document.getElementById("sortField")) document.getElementById("sortField").value = "start_time";
