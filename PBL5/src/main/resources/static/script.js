@@ -83,22 +83,22 @@ function renderTable(data) {
     }
 
     tbody.innerHTML = data.map(l => {
-        // Kiểm tra xem trạng thái có phải là OCCUPIED không (không phân biệt hoa thường)
         const isOccupied = l.status && l.status.toUpperCase() === "OCCUPIED";
 
         return `
-            <tr>
-                <td><strong>${l.id}</strong></td>
-                <td>${l.location || 'Chưa xác định'}</td>
-                <td class="status-${getStatusClass(l.status)}">${l.status}</td>
-                <td>
-                    ${isOccupied ? `<button style="background:#3b82f6" onclick="showTicketModal('${l.id}')">Mở</button>` : ''}
-                    
-                    <button style="background:#475569" onclick="showEditLocker('${l.id}')">Sửa</button>
-                    <button style="background:#ef4444" onclick="deleteLocker('${l.id}')">Xóa</button>
-                </td>
-            </tr>
-        `;
+        <tr>
+            <td><strong>${l.id}</strong></td>
+            <td>${l.location || 'Chưa xác định'}</td>
+            <td class="status-${getStatusClass(l.status)}">${l.status}</td>
+            <td>
+                <!-- Gọi hàm xử lý trung gian -->
+                ${isOccupied ? `<button style="background:#3b82f6" onclick="handleOpenTicket('${l.id}')">Mở</button>` : ''}
+                
+                <button style="background:#475569" onclick="showEditLocker('${l.id}')">Sửa</button>
+                <button style="background:#ef4444" onclick="deleteLocker('${l.id}')">Xóa</button>
+            </td>
+        </tr>
+    `;
     }).join("");
 }
 
@@ -131,60 +131,64 @@ async function resetFilters() {
     document.getElementById("statusFilter").value = "ALL";
     await loadLockers();
 }
-async function showTicketModal(lockerId) {
+async function showTicketModal(lockerId, sessionId) {
     const modal = document.getElementById("ticketModal");
     const gallery = document.getElementById("imageGallery");
     const placeholder = document.getElementById("imagePlaceholder");
 
-    // Hiện Modal và điền thông tin text
+    // 1. Reset UI
     modal.style.display = "block";
-    document.getElementById("displayLockerId").innerText = "#" + lockerId;
-    document.getElementById("ticketLockerId").value = lockerId;
+    document.getElementById("displayLockerId").innerText = lockerId;
+    document.getElementById("ticketLockerId").value = "#" + lockerId;
     document.getElementById("ticketTime").value = new Date().toLocaleString('vi-VN');
-
-    // Reset Gallery sạch sẽ trước khi tải ảnh mới
     gallery.querySelectorAll('img').forEach(img => img.remove());
     placeholder.style.display = "block";
-    placeholder.innerHTML = "⌛ Đang tìm phiên sử dụng gần nhất...";
 
     try {
-        // 1. Lấy Session mới nhất của tủ này
-        // Lưu ý: Endpoint này phải trả về object có cả id (tên folder) và startTime
-        const sessionRes = await fetch(`http://localhost:8080/sessions/${lockerId}/current-session`);
-        if (!sessionRes.ok) throw new Error("Không tìm thấy session");
-        const session = await sessionRes.json();
+        // 2. Gọi API lấy danh sách ảnh
+        const response = await fetch(`http://localhost:8080/sessions/images-by-session?sessionId=${sessionId}`);
+        if (!response.ok) throw new Error("Không tìm thấy ảnh");
 
-        if (session && session.id) {
-            placeholder.innerHTML = "⌛ Đang tải ảnh từ folder...";
+        const imageUrls = await response.json();
 
-            // 2. Lấy danh sách URL ảnh từ folder thực tế
-            // Truyền id (session_177...) và startTime (2024-05-20...)
-            const imgRes = await fetch(`http://localhost:8080/sessions/images?sessionId=${session.id}&startTime=${session.startTime}`);
-            const imageUrls = await imgRes.json();
-
-            if (imageUrls && imageUrls.length > 0) {
-                placeholder.style.display = "none";
-                imageUrls.forEach(url => {
-                    const img = document.createElement("img");
-                    // URL từ Java trả về là đường dẫn tương đối, cần thêm prefix host
-                    img.src = `http://localhost:8080${url}`;
-
-                    img.style.width = "100%";
-                    img.style.borderRadius = "8px";
-                    img.style.marginBottom = "10px";
-                    img.style.boxShadow = "0 2px 4px rgba(0,0,0,0.1)";
-
-                    gallery.appendChild(img);
-                });
-            } else {
-                placeholder.innerHTML = "⚠️ Thư mục ảnh trống.";
-            }
-        } else {
-            placeholder.innerHTML = "⚠️ Tủ đồ này hiện không có dữ liệu phiên.";
+        // 3. Chèn ảnh vào Gallery
+        if (imageUrls.length > 0) {
+            placeholder.style.display = "none";
+            imageUrls.forEach(url => {
+                const img = document.createElement("img");
+                img.src = `http://localhost:8080${url}`;
+                img.style.width = "100%";
+                img.style.height = "120px";
+                img.style.objectFit = "cover";
+                img.style.borderRadius = "8px";
+                img.style.cursor = "pointer";
+                img.onclick = () => window.open(img.src, '_blank'); // Click để xem ảnh to
+                gallery.appendChild(img);
+            });
         }
-    } catch (e) {
-        console.error("Lỗi:", e);
-        placeholder.innerHTML = "⚠️ Không thể kết nối đến máy chủ ảnh.";
+    } catch (error) {
+        placeholder.innerHTML = "⚠️ Không tìm thấy dữ liệu ảnh.";
+    }
+}
+async function handleOpenTicket(lockerId) {
+    try {
+        // 1. Gọi đúng API bạn đã có trong Controller
+        const response = await fetch(`http://localhost:8080/sessions/${lockerId}/current-session`);
+
+        if (!response.ok) {
+            alert("Không tìm thấy phiên sử dụng hiện tại cho tủ này.");
+            return;
+        }
+
+        const session = await response.json();
+
+        // 2. session.id chính là cái sessionId (format YYYYMMDD_HHmmss)
+        // Bây giờ gọi hàm hiển thị Modal mà bạn đã test thành công
+        showTicketModal(lockerId, session.id);
+
+    } catch (error) {
+        console.error("Lỗi khi lấy session:", error);
+        alert("Lỗi kết nối server.");
     }
 }
 function closeTicketModal() {
