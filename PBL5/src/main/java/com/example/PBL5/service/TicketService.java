@@ -1,5 +1,10 @@
 package com.example.PBL5.service;
 
+import java.time.LocalDateTime;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Service;
+
 import com.example.PBL5.entity.Locker;
 import com.example.PBL5.entity.Session;
 import com.example.PBL5.entity.Ticket;
@@ -8,10 +13,6 @@ import com.example.PBL5.repository.SessionRepository;
 import com.example.PBL5.repository.TicketRepository;
 import com.example.PBL5.utils.IdGenerator;
 import com.example.PBL5.websocket.LockerServer;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import java.time.LocalDateTime;
 
 @Service
 public class TicketService {
@@ -47,6 +48,10 @@ public void adminForceOpen(String lockerId, String reason) {
 
    ticketRepository.save(ticket);
    lockerServer.openLocker(locker.getId());
+}
+// Thêm hàm này vào bên trong class TicketService của bạn:
+public java.util.List<Ticket> getAllTickets() {
+    return ticketRepository.findAll();
 }
 
 }

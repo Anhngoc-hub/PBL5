@@ -59,54 +59,60 @@ public class SessionController {
     }
 
  
-    @GetMapping("/images-by-session")
+  @GetMapping("/images-by-session")
 public ResponseEntity<?> getSessionImages(@RequestParam String sessionId) {
-    // 1. Chống lỗi cắt chuỗi: Kiểm tra độ dài sessionId trước
-    if (sessionId == null || sessionId.length() < 15) {
-        return ResponseEntity.badRequest().body("ID quá ngắn, phải là YYYYMMDD_HHmmss");
+    // 1. Kiểm tra cấu trúc chuỗi đầu vào (Ví dụ: 20260505_212815)
+    if (sessionId == null || !sessionId.contains("_") || sessionId.length() < 15) {
+        return ResponseEntity.badRequest().body("Định dạng ID phải là YYYYMMDD_HHmmss");
     }
 
     try {
-        // Cắt chuỗi an toàn (Chỉ số chuẩn cho format: 20260505_212815)
-        String year = sessionId.substring(0, 4);
-        String month = sessionId.substring(4, 6);
-        String day = sessionId.substring(6, 8);
-        String hour = sessionId.substring(9, 11);
-        String min = sessionId.substring(11, 13);
-        String sec = sessionId.substring(13, 15);
-        String prefix = hour + "_" + min + "_" + sec;
+        // Tách chuỗi dựa vào dấu gạch dưới duy nhất
+        String[] parts = sessionId.split("_");
+        String datePart = parts[0]; // "20260505"
+        String timePart = parts[1]; // "212815"
+        
+        String year = datePart.substring(0, 4);
+        String month = datePart.substring(4, 6);
+        String day = datePart.substring(6, 8);
 
-        // 2. Chống lỗi Null: Dùng Paths.get để tự chuẩn hóa xuyệt / hoặc \
-        File dateDir = Paths.get(STORAGE_PATH, year, month, day).toFile();
+        // Tạo tiền tố tìm kiếm folder giờ_phút_giây (Ví dụ: "21_28_15")
+        String prefix = timePart.substring(0, 2) + "_" + timePart.substring(2, 4) + "_" + timePart.substring(4, 6);
+
+        // Đường dẫn chứa ảnh thực tế bên ổ D của bạn
+        String realStoragePath = "D:/Projects/Personal/PalmLocker/storage";
+        File dateDir = Paths.get(realStoragePath, year, month, day).toFile();
 
         if (!dateDir.exists()) {
             return ResponseEntity.status(404).body("Không tìm thấy thư mục ngày: " + dateDir.getAbsolutePath());
         }
 
-        // 3. Chống lỗi tìm kiếm: Kiểm tra danh sách folder
+        // Tìm folder bắt đầu bằng "21_28_15" (Sẽ tự động quét trúng folder "21_28_15_373" ngoài ổ đĩa)
         File[] folders = dateDir.listFiles((dir, name) -> name.startsWith(prefix));
 
         if (folders == null || folders.length == 0) {
             return ResponseEntity.status(404).body("Không tìm thấy folder session bắt đầu bằng: " + prefix);
         }
 
-        // 4. Vào thư mục ROI
-        File roiDir = new File(folders[0], "roi");
-        if (!roiDir.exists()) return ResponseEntity.notFound().build();
+        // Đi thẳng vào thư mục raw chứa ảnh gốc
+        File rawDir = new File(folders[0], "raw");
+        if (!rawDir.exists()) {
+            return ResponseEntity.status(404).body("Không tìm thấy thư mục ảnh raw tại: " + rawDir.getAbsolutePath());
+        }
 
-        String[] files = roiDir.list((dir, name) -> name.toLowerCase().endsWith(".jpg"));
+        String[] files = rawDir.list((dir, name) -> name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".png"));
         if (files == null || files.length == 0) return ResponseEntity.ok(Collections.emptyList());
 
-        // 5. Trả về kết quả
+        // Trả về danh sách URL để hiển thị lên Frontend
         List<String> urls = Arrays.stream(files)
-            .map(f -> "/sessions/display-image?fullPath=" + URLEncoder.encode(new File(roiDir, f).getAbsolutePath(), StandardCharsets.UTF_8))
+            .map(f -> "/sessions/display-image?fullPath=" + URLEncoder.encode(new File(rawDir, f).getAbsolutePath(), StandardCharsets.UTF_8))
             .collect(Collectors.toList());
 
         return ResponseEntity.ok(urls);
 
     } catch (Exception e) {
-        e.printStackTrace(); // In lỗi ra Console để Toàn debug
-        return ResponseEntity.internalServerError().body("Lỗi xử lý: " + e.getMessage());
+        e.printStackTrace();
+        return ResponseEntity.internalServerError().body("Lỗi hệ thống: " + e.getMessage());
     }
 }
     @GetMapping("/display-image")

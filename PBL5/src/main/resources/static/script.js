@@ -1,23 +1,24 @@
 // ==========================================
 // 1. CẤU HÌNH ĐƯỜNG DẪN & BIẾN TOÀN CỤC
 // ==========================================
-const API = "http://localhost:8080"; // Đã thêm cổng mặc định của Spring Boot
+const API = "http://localhost:8080";
 const ENDPOINTS = {
     LOCKERS: `${API}/lockers`,
     SESSIONS: `${API}/sessions`,
-    TICKETS: `${API}/tickets`,
-    IMAGES: `${API}/sessions/images` // Endpoint để lấy ảnh từ Folder
+    TICKETS: `${API}/api/tickets`,
+    IMAGES: `${API}/sessions/images`
 };
 
 let chartInstance = null;
-let isSearching = false; // Flag kiểm soát tự động làm mới
+let isSearching = false;
+let originalTicketsData = [];
+
 // Khởi tạo khi trang web tải xong
 document.addEventListener("DOMContentLoaded", () => {
     loadPageData();
     // Tự động làm mới mỗi 15 giây
     setInterval(() => {
         const isModalOpen = document.querySelector('.modal[style*="display: block"]');
-        // Chỉ làm mới nếu không mở Modal và không ở chế độ tìm kiếm
         if (!isModalOpen && !isSearching) {
             console.log("🔄 Tự động cập nhật dữ liệu...");
             loadPageData();
@@ -39,7 +40,6 @@ function loadPageData() {
     }
 }
 
-// Hàm chuẩn hóa Status để hiện đúng màu CSS
 function getStatusClass(status) {
     if (!status) return "free";
     const s = status.toUpperCase();
@@ -59,7 +59,7 @@ function showErrorDialog(message) {
         msg.innerText = message;
         dialog.style.display = "flex";
     } else {
-        alert(message); // Backup nếu thiếu HTML
+        alert(message);
     }
 }
 
@@ -71,8 +71,6 @@ function closeErrorDialog() {
 // ==========================================
 // 3. QUẢN LÝ LOCKER (TRANG lockers.html)
 // ==========================================
-
-// Hàm vẽ bảng (Dùng chung cho Load và Search)
 function renderTable(data) {
     const tbody = document.getElementById("lockerTable");
     if (!tbody) return;
@@ -91,9 +89,7 @@ function renderTable(data) {
             <td>${l.location || 'Chưa xác định'}</td>
             <td class="status-${getStatusClass(l.status)}">${l.status}</td>
             <td>
-                <!-- Gọi hàm xử lý trung gian -->
                 ${isOccupied ? `<button style="background:#3b82f6" onclick="handleOpenTicket('${l.id}')">Mở</button>` : ''}
-                
                 <button style="background:#475569" onclick="showEditLocker('${l.id}')">Sửa</button>
                 <button style="background:#ef4444" onclick="deleteLocker('${l.id}')">Xóa</button>
             </td>
@@ -109,7 +105,6 @@ async function loadLockers() {
     } catch (e) { console.error("Lỗi tải danh sách tủ:", e); }
 }
 
-// TÌM KIẾM VÀ LỌC (GỌI BACKEND)
 async function filterLockers() {
     const keyword = document.getElementById("lockerSearch").value.trim();
     const status = document.getElementById("statusFilter").value;
@@ -131,27 +126,69 @@ async function resetFilters() {
     document.getElementById("statusFilter").value = "ALL";
     await loadLockers();
 }
+
+// Luồng bóc tách dữ liệu mở tủ khẩn cấp (Sửa lỗi Nguyên nhân 1)
+async function handleOpenTicket(lockerId) {
+    try {
+        console.log("=== BẮT ĐẦU LUỒNG MỞ TỦ KHẨN CẤP ===");
+        const response = await fetch(`http://localhost:8080/sessions/${lockerId}/current-session`);
+
+        if (!response.ok) {
+            alert(`⚠️ Không tìm thấy phiên sử dụng hoạt động cho tủ này.`);
+            return;
+        }
+
+        const textData = await response.text();
+        if (!textData || textData.trim() === "") {
+            alert(`❌ Không có dữ liệu phiên sử dụng mẫu trong Database liên kết với tủ ${lockerId}!`);
+            return;
+        }
+
+        const session = JSON.parse(textData);
+        let rawTime = session.startTime || session.start_time;
+        if (!rawTime) {
+            alert("❌ Phiên này không lưu thời gian bắt đầu, không quét được ảnh!");
+            return;
+        }
+
+        const dateObj = new Date(rawTime);
+        const yyyy = dateObj.getFullYear();
+        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+        const dd = String(dateObj.getDate()).padStart(2, '0');
+        const hh = String(dateObj.getHours()).padStart(2, '0');
+        const min = String(dateObj.getMinutes()).padStart(2, '0');
+        const ss = String(dateObj.getSeconds()).padStart(2, '0');
+
+        const folderSessionId = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+        let shortId = lockerId.replace(/\D+/g, "").slice(-2);
+
+        showTicketModal(shortId, folderSessionId);
+
+    } catch (error) {
+        console.error("Lỗi crash luồng:", error);
+        alert("Hệ thống gặp sự cố khi đọc dữ liệu.");
+    }
+}
+
 async function showTicketModal(lockerId, sessionId) {
     const modal = document.getElementById("ticketModal");
     const gallery = document.getElementById("imageGallery");
     const placeholder = document.getElementById("imagePlaceholder");
 
-    // 1. Reset UI
     modal.style.display = "block";
     document.getElementById("displayLockerId").innerText = lockerId;
-    document.getElementById("ticketLockerId").value = "#" + lockerId;
+    document.getElementById("ticketLockerId").value = lockerId;
     document.getElementById("ticketTime").value = new Date().toLocaleString('vi-VN');
+
     gallery.querySelectorAll('img').forEach(img => img.remove());
     placeholder.style.display = "block";
 
     try {
-        // 2. Gọi API lấy danh sách ảnh
         const response = await fetch(`http://localhost:8080/sessions/images-by-session?sessionId=${sessionId}`);
         if (!response.ok) throw new Error("Không tìm thấy ảnh");
 
         const imageUrls = await response.json();
 
-        // 3. Chèn ảnh vào Gallery
         if (imageUrls.length > 0) {
             placeholder.style.display = "none";
             imageUrls.forEach(url => {
@@ -162,7 +199,7 @@ async function showTicketModal(lockerId, sessionId) {
                 img.style.objectFit = "cover";
                 img.style.borderRadius = "8px";
                 img.style.cursor = "pointer";
-                img.onclick = () => window.open(img.src, '_blank'); // Click để xem ảnh to
+                img.onclick = () => window.open(img.src, '_blank');
                 gallery.appendChild(img);
             });
         }
@@ -170,30 +207,11 @@ async function showTicketModal(lockerId, sessionId) {
         placeholder.innerHTML = "⚠️ Không tìm thấy dữ liệu ảnh.";
     }
 }
-async function handleOpenTicket(lockerId) {
-    try {
-        // 1. Gọi đúng API bạn đã có trong Controller
-        const response = await fetch(`http://localhost:8080/sessions/${lockerId}/current-session`);
 
-        if (!response.ok) {
-            alert("Không tìm thấy phiên sử dụng hiện tại cho tủ này.");
-            return;
-        }
-
-        const session = await response.json();
-
-        // 2. session.id chính là cái sessionId (format YYYYMMDD_HHmmss)
-        // Bây giờ gọi hàm hiển thị Modal mà bạn đã test thành công
-        showTicketModal(lockerId, session.id);
-
-    } catch (error) {
-        console.error("Lỗi khi lấy session:", error);
-        alert("Lỗi kết nối server.");
-    }
-}
 function closeTicketModal() {
     document.getElementById("ticketModal").style.display = "none";
 }
+
 function showLockerModal() {
     const modal = document.getElementById("lockerModal");
     if (!modal) return;
@@ -282,7 +300,7 @@ function closeModal() {
 }
 
 // ==========================================
-// 4. DASHBOARD, SESSIONS & TICKETS
+// 4. DASHBOARD & TICKETS
 // ==========================================
 async function loadDashboard() {
     try {
@@ -333,23 +351,74 @@ async function loadDashboard() {
 
 async function loadTickets() {
     try {
-        const data = await fetch(ENDPOINTS.TICKETS).then(res => res.json());
+        const response = await fetch(ENDPOINTS.TICKETS);
+        if (!response.ok) throw new Error("Không thể tải dữ liệu Ticket");
+
+        originalTicketsData = await response.json();
+        renderTicketDataToTable(originalTicketsData);
+
+    } catch (e) {
+        console.error("Lỗi tải ticket:", e);
         const tbody = document.getElementById("supportTable");
-        if (!tbody) return;
-        tbody.innerHTML = data.map(t => `
+        if (tbody) {
+            tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:#ef4444; padding:20px;">Lỗi kết nối server không thể hiển thị lịch sử!</td></tr>`;
+        }
+    }
+}
+// Hàm render dữ liệu lên bảng (Đã xếp Mã Ticket, Mã Tủ, Mã Phiên liền kề nhau)
+function renderTicketDataToTable(dataList) {
+    const tbody = document.getElementById("supportTable");
+    if (!tbody) return;
+
+    if (!dataList || dataList.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">Không tìm thấy dữ liệu ticket phù hợp.</td></tr>`;
+        return;
+    }
+
+    tbody.innerHTML = dataList.map(t => {
+        const ticketId = t.id || 'N/A';
+        const reason = t.reason || '---';
+        const lockerId = t.locker ? t.locker.id : 'N/A';
+        const lockerLocation = t.locker ? (t.locker.location || 'Chưa xác định') : 'N/A';
+        const sessionId = t.session ? t.session.id : '<span style="color:#94a3b8;">[null]</span>';
+
+        let timeStr = '---';
+        if (t.created_at || t.createdAt) {
+            timeStr = new Date(t.created_at || t.createdAt).toLocaleString('vi-VN');
+        }
+
+        return `
             <tr>
-                <td>${t.id}</td>
-                <td>${t.session_id || 'N/A'}</td>
-                <td>${t.created_at ? new Date(t.created_at).toLocaleString('vi-VN') : '---'}</td>
-                <td>${t.reason}</td>
-                <td class="status-${t.status ? t.status.toLowerCase() : 'open'}">${t.status}</td>
-                <td>
-                    <button onclick="updateTicketStatus('${t.id}', 'RESOLVED')">Giải quyết</button>
-                    <button style="background:#ef4444" onclick="deleteTicket('${t.id}')">Xóa</button>
-                </td>
+                <td><strong>${ticketId}</strong></td>
+                <td><span style="background: #e0f2fe; color: #0369a1; padding: 4px 8px; border-radius: 6px; font-weight: bold; font-size: 13px;">${lockerId}</span></td>
+                <td style="font-family: monospace; font-weight: bold; color: #1e293b;">${sessionId}</td> <td style="color: #475569; font-weight: 500;">${lockerLocation}</td>
+                <td>${timeStr}</td>
+                <td style="color:#ef4444; font-weight:500;">${reason}</td>
             </tr>
-        `).join("");
-    } catch (e) { console.error("Lỗi tải ticket:", e); }
+        `;
+    }).join("");
+}
+function filterTicketTable() {
+    const searchKeyword = document.getElementById("ticketSearchInput").value.trim().toUpperCase();
+
+    const filteredResults = originalTicketsData.filter(t => {
+        // 1. Lấy mã tủ đồ (Ví dụ: "LK00000001")
+        const currentLockerId = t.locker && t.locker.id ? t.locker.id.toUpperCase() : '';
+
+        // 2. Lấy vị trí tủ đồ (Ví dụ: "TẦNG 1 - KHU A")
+        const currentLockerLocation = t.locker && t.locker.location ? t.locker.location.toUpperCase() : '';
+
+        // Luồng xử lý kiểm tra: Từ khóa khớp với Vị trí HOẶC khớp với Mã tủ thì đều giữ lại hàng đó
+        return currentLockerLocation.includes(searchKeyword) || currentLockerId.includes(searchKeyword);
+    });
+
+    // Vẽ lại giao diện bảng sau khi đã lọc bắc cầu thành công
+    renderTicketDataToTable(filteredResults);
+}
+
+function clearTicketSearch() {
+    document.getElementById("ticketSearchInput").value = "";
+    renderTicketDataToTable(originalTicketsData);
 }
 async function submitTicket() {
     const lockerId = document.getElementById("ticketLockerId").value;
@@ -363,13 +432,8 @@ async function submitTicket() {
     try {
         const res = await fetch("http://localhost:8080/lockers/open", {
             method: "POST",
-            headers: {
-                "Content-Type": "application/json"
-            },
-            body: JSON.stringify({
-                lockerId: lockerId,
-                reason: reason
-            })
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ lockerId: lockerId, reason: reason })
         });
 
         if (res.ok) {
@@ -379,19 +443,19 @@ async function submitTicket() {
         } else {
             showErrorDialog("Không thể thực hiện lệnh mở tủ!");
         }
-
     } catch (e) {
-        console.error("Lỗi thật sự là:", e);
         showErrorDialog("Lỗi kết nối Server!");
     }
 }
-// 1. Tìm kiếm và Sắp xếp (Thay thế hoàn toàn cho logic cũ)
+
+// ==========================================
+// 5. QUẢN LÝ PHIÊN SỬ DỤNG (TRANG users.html)
+// ==========================================
 async function filterSessions() {
     const lockerId = document.getElementById("sessionSearch").value.trim();
     const status = document.getElementById("statusFilter").value;
     const sortBy = document.getElementById("sortField").value;
 
-    // Bật flag để dừng auto-refresh
     isSearching = (lockerId !== "" || status !== "ALL");
 
     try {
@@ -401,61 +465,152 @@ async function filterSessions() {
         const data = await res.json();
         renderSessionTable(data);
     } catch (e) {
-        console.error(e);
-        // Tránh hiện dialog liên tục nếu do auto-refresh lỗi, chỉ hiện khi người dùng chủ động tìm
         if (lockerId) showErrorDialog("Lỗi truy xuất dữ liệu!");
     }
 }
-// 2. Tải toàn bộ danh sách khi trang web vừa mở
+
 async function loadSessions() {
     try {
         const response = await fetch(ENDPOINTS.SESSIONS);
         const data = await response.json();
         renderSessionTable(data);
-    } catch (e) {
-        console.error("Lỗi tải phiên sử dụng:", e);
-    }
+    } catch (e) { console.error("Lỗi tải phiên sử dụng:", e); }
 }
 
-
+// Hàm render bảng - ĐÃ XÓA HOÀN TOÀN CỘT HÀNH ĐỘNG VÀ BUTTON KẾT THÚC
 function renderSessionTable(data) {
     const tbody = document.getElementById("sessionTable");
     if (!tbody) return;
 
     const list = Array.isArray(data) ? data : (data && data.id ? [data] : []);
 
+    // Số lượng cột giảm xuống còn 6 cột sau khi xóa cột Palm Hash
     if (list.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center; padding:20px; color:#94a3b8;">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:20px; color:#94a3b8;">Không tìm thấy dữ liệu phù hợp.</td></tr>`;
         return;
     }
 
     tbody.innerHTML = list.map(s => {
         const statusColor = s.status === 'ACTIVE' ? '#22c55e' : '#64748b';
+        const rawTime = s.start_time || s.startTime;
+
+        let folderSessionId = "";
+        if (rawTime) {
+            const dateObj = new Date(rawTime);
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const hh = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+            const ss = String(dateObj.getSeconds()).padStart(2, '0');
+            folderSessionId = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+        }
 
         return `
         <tr>
             <td><strong>${s.id}</strong></td>
             <td>${s.lockerId || 'N/A'}</td>
-            <td style="font-family:monospace; font-size:12px; color:#3b82f6;">${s.palm_hash || s.palmHash || '---'}</td>
-            <td>${(s.start_time || s.startTime) ? new Date(s.start_time || s.startTime).toLocaleString('vi-VN') : '---'}</td>
+            <td>${rawTime ? new Date(rawTime).toLocaleString('vi-VN') : '---'}</td>
             <td>${(s.end_time || s.endTime) ? new Date(s.end_time || s.endTime).toLocaleString('vi-VN') : '---'}</td>
             
+            <td style="text-align: center; vertical-align: middle; padding: 5px;">
+                ${folderSessionId ? `
+                    <div id="img-container-${folderSessionId}" style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: #e2e8f0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1;">
+                        <span style="font-size: 11px; color: #64748b;">⏳</span>
+                    </div>
+                ` : '---'}
+            </td>
+
             <td>
                 <span style="background: ${statusColor}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">
                     ${s.status}
                 </span>
             </td>
-
-            <td>
-                <button style="background:#f59e0b; border:none; color:white; padding:5px 10px; border-radius:4px; cursor:pointer;" 
-                        onclick="finishSession('${s.id}')">Kết thúc</button>
-            </td>
         </tr>
-    `}).join("");
+    `;
+    }).join("");
+
+    // Gọi luồng nạp ảnh ngầm lên từng dòng
+    list.forEach(s => {
+        const rawTime = s.start_time || s.startTime;
+        if (rawTime) {
+            const dateObj = new Date(rawTime);
+            const yyyy = dateObj.getFullYear();
+            const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
+            const dd = String(dateObj.getDate()).padStart(2, '0');
+            const hh = String(dateObj.getHours()).padStart(2, '0');
+            const min = String(dateObj.getMinutes()).padStart(2, '0');
+            const ss = String(dateObj.getSeconds()).padStart(2, '0');
+            const folderSessionId = `${yyyy}${mm}${dd}_${hh}${min}${ss}`;
+
+            fetchAndRenderRowImage(folderSessionId);
+        }
+    });
 }
-// 4. Reset các bộ lọc về mặc định
+// Hàm quét ảnh chạy ngầm và tạo Popup trưng bày Album (Cách 1)
+async function fetchAndRenderRowImage(sessionId) {
+    const container = document.getElementById(`img-container-${sessionId}`);
+    if (!container) return;
+
+    try {
+        const response = await fetch(`http://localhost:8080/sessions/images-by-session?sessionId=${sessionId}`);
+        if (!response.ok) throw new Error();
+
+        const imageUrls = await response.json();
+
+        if (imageUrls && imageUrls.length > 0) {
+            const allImagesJson = JSON.stringify(imageUrls).replace(/"/g, '&quot;');
+
+            container.innerHTML = `
+                <div style="position: relative; width: 100%; height: 100%;">
+                    <img src="http://localhost:8080${imageUrls[0]}" 
+                         style="width: 100%; height: 100%; object-fit: cover; cursor: pointer;" 
+                         title="Xem tất cả ${imageUrls.length} ảnh" 
+                         onclick="openImageGalleryPopup('${sessionId}', '${allImagesJson}')">
+                    ${imageUrls.length > 1 ? `
+                        <span style="position: absolute; bottom: 2px; right: 2px; background: rgba(0,0,0,0.7); color: white; font-size: 9px; padding: 1px 4px; border-radius: 4px; font-weight: bold; pointer-events: none;">
+                            +${imageUrls.length - 1}
+                        </span>
+                    ` : ''}
+                </div>`;
+        } else {
+            container.innerHTML = `<span style="font-size: 16px;" title="Thư mục trống">🖐️</span>`;
+        }
+    } catch (error) {
+        container.innerHTML = `<span style="font-size: 11px; color: #94a3b8;" title="Không tìm thấy thư mục ảnh">❌</span>`;
+    }
+}
+
+// Popup hiển thị danh sách toàn bộ hình ảnh trong Session
+function openImageGalleryPopup(sessionId, imagesJson) {
+    const imageUrls = JSON.parse(imagesJson.replace(/&quot;/g, '"'));
+
+    let overlay = document.createElement("div");
+    overlay.style = "position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 9999; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 20px;";
+    overlay.id = "gallery-overlay";
+
+    let content = document.createElement("div");
+    content.style = "background: white; padding: 20px; border-radius: 12px; max-width: 600px; width: 90%; box-shadow: 0 5px 25px rgba(0,0,0,0.3);";
+    content.innerHTML = `
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+            <h3 style="margin: 0; color: #1e293b;">Danh sách ảnh quét - Session #${sessionId}</h3>
+            <button onclick="document.getElementById('gallery-overlay').remove()" style="background: #ef4444; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-weight: bold;">Đóng ×</button>
+        </div>
+        <hr style="border: 0; border-top: 1px solid #e2e8f0; margin-bottom: 15px;">
+        <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; max-height: 400px; overflow-y: auto; padding: 5px;">
+            ${imageUrls.map(url => `
+                <img src="http://localhost:8080${url}" style="width: 100%; height: 130px; object-fit: cover; border-radius: 8px; border: 1px solid #cbd5e1; cursor: pointer; transition: transform 0.2s;" onmouseover="this.style.transform='scale(1.03)'" onmouseout="this.style.transform='scale(1)'" onclick="window.open(this.src, '_blank')">
+            `).join("")}
+        </div>
+    `;
+
+    overlay.appendChild(content);
+    overlay.onclick = (e) => { if (e.target.id === "gallery-overlay") overlay.remove(); };
+    document.body.appendChild(overlay);
+}
+
 function resetSessionFilters() {
-    isSearching = false; // Tắt flag để tiếp tục auto-refresh
+    isSearching = false;
     document.getElementById("sessionSearch").value = "";
     document.getElementById("statusFilter").value = "ALL";
     if (document.getElementById("sortField")) document.getElementById("sortField").value = "start_time";

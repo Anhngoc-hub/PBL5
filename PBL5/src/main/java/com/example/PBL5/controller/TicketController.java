@@ -1,16 +1,18 @@
 package com.example.PBL5.controller;
 
 import com.example.PBL5.dto.adminOpenRequestDto;
+import com.example.PBL5.entity.Ticket;
 import com.example.PBL5.service.TicketService;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/tickets")
+@CrossOrigin(origins = "*") // Đảm bảo Frontend fetch dữ liệu không bị lỗi CORS
 public class TicketController {
-    private TicketService ticketService;
+    private final TicketService ticketService;
+
     public TicketController(TicketService ticketService) {
         this.ticketService = ticketService;
     }
@@ -24,4 +26,9 @@ public class TicketController {
         return "locker opened";
     }
 
+    // THÊM ENDPOINT NÀY: Lấy tất cả danh sách Ticket
+    @GetMapping
+    public List<Ticket> getAllTickets() {
+        return ticketService.getAllTickets();
+    }
 }

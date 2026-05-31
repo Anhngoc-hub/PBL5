@@ -19,13 +19,21 @@
 
     <div class="main">
         <header>
-            <h1>Trung tâm Hỗ trợ & Ticket</h1>
+            <h1>Lịch sử Ticket Mở Tủ Khẩn Cấp</h1>
         </header>
 
-        <div class="toolbar" style="margin-top: 20px; display: flex; gap: 10px;">
-            <button class="btn-filter" onclick="loadTickets()">🔄 Làm mới danh sách</button>
-            <input type="text" id="ticketSearch" placeholder="Tìm theo mã tủ hoặc lý do..."
-                style="padding: 10px; width: 300px; border-radius: 8px; border: 1px solid #cbd5e1;">
+        <div class="toolbar"
+            style="margin-top: 20px; background: #fff; padding: 15px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); display: flex; align-items: center; gap: 15px;">
+            <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-weight: bold; font-size: 13px; color: #475569;">Tìm kiếm thông minh:</label>
+                <input type="text" id="ticketSearchInput" onkeyup="filterTicketTable()"
+                    placeholder="Nhập vị trí tủ hoặc mã tủ đồ (Ví dụ: Tầng 1, Khu A, LK0001)..."
+                    style="padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; font-size: 14px;">
+            </div>
+            <button onclick="clearTicketSearch()"
+                style="margin-top: 22px; background: #64748b; color: white; border: none; padding: 10px 15px; border-radius: 6px; cursor: pointer; font-weight: bold; height: 38px;">
+                🔄 Làm mới
+            </button>
         </div>
 
         <div class="table-container" style="margin-top: 20px;">
@@ -33,30 +41,21 @@
                 <thead>
                     <tr>
                         <th>Mã Ticket</th>
-                        <th>Mã Tủ </th>
+                        <th>Mã Tủ Đồ</th>
+                        <th>Mã Phiên (Session)</th>
+                        <th>Vị Trí Tủ</th>
                         <th>Thời Gian Tạo</th>
-                        <th>Lý Do Sự Cố</th>
-                        <th>Trạng Thái</th>
-                        <th>Thao Tác Admin</th>
+                        <th>Lý Do Mở Tủ</th>
                     </tr>
                 </thead>
                 <tbody id="supportTable">
                     <tr>
-                        <td colspan="6" style="text-align: center; padding: 30px; color: #64748b;">
-                            Đang tải danh sách yêu cầu hỗ trợ...
+                        <td colspan="6" style="text-align: center; padding: 40px; color: #94a3b8;">
+                            Đang tải lịch sử ticket mở khóa...
                         </td>
                     </tr>
                 </tbody>
             </table>
-        </div>
-
-        <div class="note-box"
-            style="margin-top: 20px; padding: 15px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">
-            <p style="font-size: 14px; color: #92400e;">
-                <strong>💡 Lưu ý:</strong> Khi chọn <strong>"Giải quyết"</strong>, trạng thái ticket sẽ chuyển thành
-                <code>RESOLVED</code>. Hãy đảm bảo bạn đã kiểm tra tủ đồ vật lý hoặc xử lý xong sự cố cho khách hàng
-                trước khi đóng ticket.
-            </p>
         </div>
     </div>
 
