@@ -1,6 +1,10 @@
 package com.example.PBL5.service;
-
-import java.util.ArrayList;
+import java.io.File;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -9,17 +13,15 @@ import org.springframework.stereotype.Service;
 
 import com.example.PBL5.dto.SessionResponse;
 import com.example.PBL5.entity.Session;
-import com.example.PBL5.repository.LockerRepository;
 import com.example.PBL5.repository.SessionRepository;
 
 @Service
 public class SessionService {
     private final SessionRepository sessionRepository; // khai báo 1 biến trong class Service
-    private final LockerRepository lockerRepository;
+    private final String STORAGE_PATH = "D:/Projects/Personal/PalmLocker/storage";
 
-    public SessionService(SessionRepository sessionRepository, LockerRepository lockerRepository) {
+    public SessionService(SessionRepository sessionRepository) {
         this.sessionRepository = sessionRepository;// gan obj cho bien cua class Service
-        this.lockerRepository = lockerRepository;
     }
 
     private SessionResponse convertToDTO(Session session) {
@@ -27,9 +29,10 @@ public class SessionService {
     response.setId(session.getId());
     
     // Gọi các getter mới
-    response.setStart_time(session.getStart_time()); 
-    response.setEnd_time(session.getEnd_time());
+    response.setStartTime(session.getStartTime()); 
+    response.setEndTime (session.getEndTime());
     response.setStatus(session.getStatus());
+    response.setLockerLocation(session.getLocker() != null ? session.getLocker().getLocation() : null);
 
     if (session.getLocker() != null) {
         response.setLockerId(session.getLocker().getId());
@@ -37,15 +40,26 @@ public class SessionService {
     return response;
 }
 
-    public List<SessionResponse> getAllSessions() {
-        List<Session> sessions = sessionRepository.findAll();
-        List<SessionResponse> result = new ArrayList<>();
-
-        for (Session session : sessions) {
-            result.add(convertToDTO(session));
+   public List<SessionResponse> getAllSessions() {
+    List<Session> sessions = sessionRepository.findAll();
+    List<SessionResponse> responseList = new java.util.ArrayList<>();
+    
+    for (Session session : sessions) {
+        SessionResponse res = new SessionResponse();
+        res.setId(session.getId());
+        
+        if (session.getLocker() != null) {
+            res.setLockerId(session.getLocker().getId());
+            res.setLockerLocation(session.getLocker().getLocation()); // 🔥 Nạp vị trí tủ
         }
-        return result;
+        
+        res.setStartTime(session.getStartTime());
+        res.setEndTime(session.getEndTime());
+        res.setStatus(session.getStatus());
+        responseList.add(res);
     }
+    return responseList;
+}
 
     public SessionResponse getSessionById(String id) {
         Session session = sessionRepository.findById(id).orElse(null);
@@ -94,127 +108,50 @@ public List<SessionResponse> searchSessions(String lockerId, String status, Stri
                    .map(s -> this.convertToDTO(s)) 
                    .collect(Collectors.toList());
 }
-  /*  public PalmScanResponse scanPalm(String palmHash) {
-        Session session = sessionRepository.findByPalmHashAndStatus(palmHash, "ACTIVE");
-        if(session != null){
-
-            Locker locker = session.getLocker();
-
-            session.setStatus("FINISHED");
-            session.setEnd_time(LocalDateTime.now());
-
-            locker.setStatus("AVAILABLE");
-
-            sessionRepository.save(session);
-            lockerRepository.save(locker);
-
-            return new PalmScanResponse(
-                    "RETRIEVE",
-                    locker.getId(),
-                    session.getId()
-            );
-        }
-        // 3 nếu chưa có → user gửi đồ
-        Locker locker = lockerRepository.findTopByStatus("AVAILABLE");
-
-        if(locker == null){
-            return null;
+public List<String> getSessionImageUrls(String sessionId) throws IllegalArgumentException, Exception {
+        // 1. Kiểm tra cấu trúc chuỗi đầu vào
+        if (sessionId == null || !sessionId.contains("_") || sessionId.length() < 15) {
+            throw new IllegalArgumentException("Định dạng ID phải là YYYYMMDD_HHmmss");
         }
 
-        // tạo sessionId
-        Session lastSession = sessionRepository.findTopByOrderByIdDesc();
-        String lastId = lastSession != null ? lastSession.getId() : null;
+        // Tách chuỗi dựa vào dấu gạch dưới duy nhất
+        String[] parts = sessionId.split("_");
+        String datePart = parts[0]; // "20260505"
+        String timePart = parts[1]; // "212815"
+        
+        String year = datePart.substring(0, 4);
+        String month = datePart.substring(4, 6);
+        String day = datePart.substring(6, 8);
 
-        String newId = IdGenerator.generateId(lastId,"SS");
+        // Tạo tiền tố tìm kiếm folder giờ_phút_giây (Ví dụ: "21_28_15")
+        String prefix = timePart.substring(0, 2) + "_" + timePart.substring(2, 4) + "_" + timePart.substring(4, 6);
 
-        // tạo session
-        Session newSession = new Session();
-        newSession.setId(newId);
-        newSession.setPalm_hash(palmHash);
-        newSession.setStart_time(LocalDateTime.now());
-        newSession.setStatus("ACTIVE");
-        newSession.setLocker(locker);
-
-        sessionRepository.save(newSession);
-
-        locker.setStatus("OCCUPIED");
-        lockerRepository.save(locker);
-
-        return new PalmScanResponse(
-                "STORE",
-                locker.getId(),
-                newId
-        );
-    }*/
-
-
-    /*public SessionResponse createSession(String palmHash) {
-        //check palm da co session chua
-        Session existSession = sessionRepository.findByPalmHashAndStatus(palmHash, "ACTIVE");
-
-        if (existSession != null) {
-            SessionResponse response = new SessionResponse();
-
-            response.setId(existSession.getId());
-            response.setLockerId(existSession.getLocker().getId());
-            response.setStatus("ACTIVE");
-
-            return response;
-
-        }
-        //tim locker AVAILABLE
-        Locker locker = lockerRepository.findTopByStatus("AVAILABLE");
-        if (locker == null) {
-            return null;
-        }
-        //tao sessionId
-        Session lastSession = sessionRepository.findTopByOrderByIdDesc();
-        String lastId = lastSession != null ? lastSession.getId() : null;
-
-        String newId = IdGenerator.generateId(lastId, "SS");
-
-        Session session = new Session();
-        session.setId(newId);
-        session.setPalm_hash(palmHash);
-        session.setStart_time(LocalDateTime.now());
-        session.setStatus("ACTIVE");
-        session.setLocker(locker);
-
-        sessionRepository.save(session);
-        //update locker
-        locker.setStatus("ACTIVE");
-        lockerRepository.save(locker);
-
-        //response
-        SessionResponse response = new SessionResponse();
-        response.setId(session.getId());
-        response.setLockerId(locker.getId());
-        response.setStatus("ACTIVE");
-        response.setStart_time(LocalDateTime.now());
-
-        return response;
-
-    }*/
-
-   /* public String finishSession(String sessionId) {
-        Session session = sessionRepository.findById(sessionId).orElse(null);
-
-        if (session == null) {
-            return "session not found";
+        File dateDir = Paths.get(STORAGE_PATH, year, month, day).toFile();
+        if (!dateDir.exists()) {
+            return null; // Trả về null báo hiệu Controller xuất lỗi 404 không thấy ngày
         }
 
-        if ("FINISHED".equals(session.getStatus())) {
-            return "session finished";
+        // Tìm folder bắt đầu bằng prefix (Ví dụ: "21_28_15_373")
+        File[] folders = dateDir.listFiles((dir, name) -> name.startsWith(prefix));
+        if (folders == null || folders.length == 0) {
+            return null; // Trả về null báo hiệu không thấy folder giờ
         }
-        session.setEnd_time(LocalDateTime.now());
-        session.setStatus("FINISHED");
 
-        Locker locker = session.getLocker();
-        locker.setStatus("AVAILABLE");
+        // Đi thẳng vào thư mục raw chứa ảnh gốc
+        File rawDir = new File(folders[0], "raw");
+        if (!rawDir.exists()) {
+            return null; // Trả về null báo hiệu không thấy folder raw
+        }
 
-        sessionRepository.save(session);
-        lockerRepository.save(locker);
+        String[] files = rawDir.list((dir, name) -> name.toLowerCase().endsWith(".jpg") || name.toLowerCase().endsWith(".png"));
+        if (files == null || files.length == 0) {
+            return Collections.emptyList();
+        }
 
-        return "session finished";
-    }*/
+        // Trả về danh sách URL tương đối để hiển thị lên Frontend
+        return Arrays.stream(files)
+            .map(f -> "/sessions/display-image?fullPath=" + URLEncoder.encode(new File(rawDir, f).getAbsolutePath(), StandardCharsets.UTF_8))
+            .collect(Collectors.toList());
+    }
+ 
 }

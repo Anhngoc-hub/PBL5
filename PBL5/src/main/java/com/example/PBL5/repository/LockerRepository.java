@@ -17,4 +17,9 @@ public interface LockerRepository extends JpaRepository<Locker, String> {
 
     @Query("SELECT l FROM Locker l WHERE l.id LIKE %:keyword% OR l.location LIKE %:keyword%")
     List<Locker> searchAllStatus(@Param("keyword") String keyword);
+    // Tự động sinh câu lệnh: SELECT COUNT(*) FROM locker WHERE status = ?
+    long countByStatus(String status);
+
+    // Tự động sinh câu lệnh: SELECT COUNT(*) FROM locker WHERE status IN (?, ?, ...)
+    long countByStatusIn(List<String> statuses);
 }

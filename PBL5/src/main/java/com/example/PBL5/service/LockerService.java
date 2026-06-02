@@ -1,6 +1,9 @@
 package com.example.PBL5.service;
 
 import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.List;
 
 import com.example.PBL5.dto.adminOpenRequestDto;
@@ -124,5 +127,17 @@ public class LockerService {
             }
 
         }
+    public Map<String, Object> getDashboardStatistics() {
+    Map<String, Object> stats = new HashMap<>();
+    
+    // Đẩy toàn bộ gánh nặng tính toán nghiệp vụ xuống đây
+    stats.put("total", lockerRepository.count());
+    stats.put("free", lockerRepository.countByStatusIn(Arrays.asList("FREE", "AVAILABLE")));
+    stats.put("occupied", lockerRepository.countByStatusIn(Arrays.asList("OCCUPIED", "IN_USE")));
+    stats.put("error", lockerRepository.countByStatus("ERROR"));
+    stats.put("supportCount", ticketRepository.count()); 
+    
+    return stats;
+}
     }
 

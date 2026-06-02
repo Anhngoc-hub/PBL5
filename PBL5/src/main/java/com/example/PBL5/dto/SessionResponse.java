@@ -4,10 +4,11 @@ import java.time.LocalDateTime;
 
 public class SessionResponse {
     private String id;
-    private LocalDateTime start_time;
-    private LocalDateTime end_time;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
     private String status;
     private String lockerId;
+    private String lockerLocation;
 
     public String getId() {
         return id;
@@ -17,20 +18,20 @@ public class SessionResponse {
         this.id = id;
     }
 
-    public LocalDateTime getStart_time() {
-        return start_time;
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
     }
 
-    public void setStart_time(LocalDateTime start_time) {
-        this.start_time = start_time;
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 
-    public LocalDateTime getEnd_time() {
-        return end_time;
+    public LocalDateTime getStartTime() {
+        return startTime;
     }
 
-    public void setEnd_time(LocalDateTime end_time) {
-        this.end_time = end_time;
+    public LocalDateTime getEndTime() {
+        return endTime;
     }
 
     public String getStatus() {
@@ -39,6 +40,14 @@ public class SessionResponse {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getLockerLocation() {
+        return lockerLocation;
+    }
+
+    public void setLockerLocation(String lockerLocation) {
+        this.lockerLocation = lockerLocation;
     }
 
     public String getLockerId() {

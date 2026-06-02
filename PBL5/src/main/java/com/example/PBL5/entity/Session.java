@@ -10,38 +10,75 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name ="session")
+@Table(name = "session")
 public class Session {
+    
     @Id
     private String id;
-    @Column(name ="palm_hash")
+
+    @Column(name = "palm_hash")
     private String palmHash;
 
     @Column(name = "start_time")
-private LocalDateTime startTime; 
+    private LocalDateTime startTime; 
 
-@Column(name = "end_time")
-private LocalDateTime endTime;
+    @Column(name = "end_time")
+    private LocalDateTime endTime;
 
-    @Column(name ="status")
+    @Column(name = "status")
     private String status;
 
     @ManyToOne
     @JoinColumn(name = "locker_id")
     private Locker locker;
 
+    // Constructor không tham số bắt buộc của JPA
     public Session() {
-
     }
-    public Session(String id, String palm_hash, LocalDateTime start_time, LocalDateTime end_time, Locker locker) {
+
+    // Constructor có tham số đã chuẩn hóa tên biến camelCase
+    public Session(String id, String palmHash, LocalDateTime startTime, LocalDateTime endTime, String status, Locker locker) {
         this.id = id;
-        this.palmHash = palm_hash;
-        this.startTime = start_time;
-        this.endTime = end_time;
+        this.palmHash = palmHash;
+        this.startTime = startTime;
+        this.endTime = endTime;
+        this.status = status;
         this.locker = locker;
     }
+
+    // ==========================================
+    // HỆ THỐNG GETTER & SETTER CHUẨN CAMELCASE
+    // ==========================================
     public String getId() {
         return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
+    }
+
+    public String getPalmHash() { // Đổi từ getPalm_hash
+        return palmHash;
+    }
+
+    public void setPalmHash(String palmHash) { // Đổi từ setPalm_hash
+        this.palmHash = palmHash;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 
     public String getStatus() {
@@ -50,34 +87,6 @@ private LocalDateTime endTime;
 
     public void setStatus(String status) {
         this.status = status;
-    }
-
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public LocalDateTime getStart_time() {
-        return startTime;
-    }
-
-    public void setStart_time(LocalDateTime start_time) {
-        this.startTime = start_time;
-    }
-
-    public String getPalm_hash() {
-        return palmHash;
-    }
-
-    public void setPalm_hash(String palm_hash) {
-        this.palmHash = palm_hash;
-    }
-
-    public LocalDateTime getEnd_time() {
-        return endTime;
-    }
-
-    public void setEnd_time(LocalDateTime end_time) {
-        this.endTime = end_time;
     }
 
     public Locker getLocker() {

@@ -1,20 +1,33 @@
 package com.example.PBL5.controller;
 
+import java.util.List;
+
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.PBL5.dto.adminOpenRequestDto;
 import com.example.PBL5.entity.Ticket;
 import com.example.PBL5.service.TicketService;
-import org.springframework.web.bind.annotation.*;
-
-import java.util.List;
 
 @RestController
-@RequestMapping("/api/tickets")
-@CrossOrigin(origins = "*") // Đảm bảo Frontend fetch dữ liệu không bị lỗi CORS
+@RequestMapping("/tickets") 
+@CrossOrigin(origins = "*") // Cho phép Frontend JavaScript truy cập cấu trúc API
 public class TicketController {
+    
     private final TicketService ticketService;
 
     public TicketController(TicketService ticketService) {
         this.ticketService = ticketService;
+    }
+
+    // Endpoint lấy tất cả danh sách Ticket đổ ra bảng support.html
+    @GetMapping
+    public List<Ticket> getAllTickets() {
+        return ticketService.getAllTickets();
     }
 
     @PostMapping("/force-open")
@@ -24,11 +37,5 @@ public class TicketController {
                 request.getReason()
         );
         return "locker opened";
-    }
-
-    // THÊM ENDPOINT NÀY: Lấy tất cả danh sách Ticket
-    @GetMapping
-    public List<Ticket> getAllTickets() {
-        return ticketService.getAllTickets();
     }
 }
