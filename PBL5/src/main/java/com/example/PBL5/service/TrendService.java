@@ -1,14 +1,11 @@
 package com.example.PBL5.service;
 
-<<<<<<< HEAD
-=======
 import com.example.PBL5.dto.DashboardTrendDto;
 import com.example.PBL5.repository.SessionRepository;
 import com.example.PBL5.repository.TicketRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
->>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -17,16 +14,6 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-<<<<<<< HEAD
-
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Service;
-
-import com.example.PBL5.dto.DashboardTrendDto;
-import com.example.PBL5.repository.SessionRepository;
-import com.example.PBL5.repository.TicketRepository;
-=======
->>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
 @Service
 public class TrendService {
     @Autowired
@@ -103,9 +90,5 @@ public class TrendService {
             }
         }
     }
-<<<<<<< HEAD
-}
-=======
 }
 
->>>>>>> 471904535ee3a974de671679233564eb79a3eb6d

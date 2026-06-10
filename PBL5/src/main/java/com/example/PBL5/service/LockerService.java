@@ -158,16 +158,20 @@ public class LockerService {
         }
     }
     public Map<String, Object> getDashboardStatistics() {
-    Map<String, Object> stats = new HashMap<>();
-    
-    // Đẩy toàn bộ gánh nặng tính toán nghiệp vụ xuống đây
-    stats.put("total", lockerRepository.count());
-    stats.put("free", lockerRepository.countByStatusIn(Arrays.asList("FREE", "available")));
-    stats.put("occupied", lockerRepository.countByStatusIn(Arrays.asList("occupied", "IN_USE")));
-    stats.put("error", lockerRepository.countByStatus("ERROR"));
-    stats.put("supportCount", ticketRepository.count()); 
-    
-    return stats;
-}
+        Map<String, Object> stats = new HashMap<>();
+
+        // Đẩy toàn bộ gánh nặng tính toán nghiệp vụ xuống đây
+        stats.put("total", lockerRepository.count());
+
+        // 🔥 Bổ sung thêm "AVAILABLE" (In hoa) để quét sạch mọi trường hợp
+        stats.put("free", lockerRepository.countByStatusIn(Arrays.asList("FREE", "available", "AVAILABLE")));
+
+        // 🔥 Bổ sung thêm "OCCUPIED" (In hoa)
+        stats.put("occupied", lockerRepository.countByStatusIn(Arrays.asList("occupied", "IN_USE", "OCCUPIED")));
+
+        stats.put("error", lockerRepository.countByStatusIn(Arrays.asList("ERROR", "error")));        stats.put("supportCount", ticketRepository.count());
+
+        return stats;
+    }
     }
 

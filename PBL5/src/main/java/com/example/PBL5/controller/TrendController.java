@@ -9,25 +9,21 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 
-    @RestController
-    @RequestMapping("/api/dashboard")
-    @CrossOrigin(origins = "*")
-    public class TrendController {
+@RestController
+@RequestMapping("/api/dashboard")
+@CrossOrigin(origins = "*")
+public class TrendController {
 
-        @Autowired
-        private TrendService trendService;
+    @Autowired
+    private TrendService trendService;
 
-        @GetMapping("/trend")
-        public ResponseEntity<DashboardTrendDto> getTrend(
-                @RequestParam(value = "type", defaultValue = "week") String type,
-                @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
-                @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
+    @GetMapping("/trend")
+    public ResponseEntity<DashboardTrendDto> getTrend(
+            @RequestParam(value = "type", defaultValue = "week") String type,
+            @RequestParam(value = "startDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate startDate,
+            @RequestParam(value = "endDate", required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate endDate) {
 
-            return ResponseEntity.ok(trendService.getTrendData(type, startDate, endDate));
-        }
-<<<<<<< HEAD
+        return ResponseEntity.ok(trendService.getTrendData(type, startDate, endDate));
     }
-=======
-    }
+}
 
->>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
