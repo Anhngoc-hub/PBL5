@@ -25,4 +25,9 @@ import java.time.LocalDate;
 
             return ResponseEntity.ok(trendService.getTrendData(type, startDate, endDate));
         }
+<<<<<<< HEAD
     }
+=======
+    }
+
+>>>>>>> 471904535ee3a974de671679233564eb79a3eb6d

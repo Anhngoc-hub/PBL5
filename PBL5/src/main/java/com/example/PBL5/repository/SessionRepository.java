@@ -28,4 +28,10 @@ public interface SessionRepository extends JpaRepository<Session, String> {
     List<Object[]> countUsageByMonth(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 
 
+    @Query(value = "SELECT TO_CHAR(start_time, 'YYYY-MM-DD'), COUNT(*) FROM session WHERE start_time BETWEEN :start AND :end GROUP BY TO_CHAR(start_time, 'YYYY-MM-DD')", nativeQuery = true)
+    List<Object[]> countUsageByDay(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
+    @Query(value = "SELECT TO_CHAR(start_time, 'MM'), COUNT(*) FROM session WHERE start_time BETWEEN :start AND :end GROUP BY TO_CHAR(start_time, 'MM')", nativeQuery = true)
+    List<Object[]> countUsageByMonth(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
+
 }

@@ -9,9 +9,15 @@ import java.util.List;
 
 public interface TicketRepository extends JpaRepository<Ticket, String> {
 Ticket findTopByOrderByIdDesc();
+<<<<<<< HEAD
  @Query(value = "SELECT TO_CHAR(created_at, 'YYYY-MM-DD'), COUNT(*) FROM ticket WHERE created_at BETWEEN :start AND :end GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')", nativeQuery = true)
+=======
+    @Query(value = "SELECT TO_CHAR(created_at, 'YYYY-MM-DD'), COUNT(*) FROM ticket WHERE created_at BETWEEN :start AND :end GROUP BY TO_CHAR(created_at, 'YYYY-MM-DD')", nativeQuery = true)
+>>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
     List<Object[]> countTicketsByDay(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 
     @Query(value = "SELECT TO_CHAR(created_at, 'MM'), COUNT(*) FROM ticket WHERE created_at BETWEEN :start AND :end GROUP BY TO_CHAR(created_at, 'MM')", nativeQuery = true)
     List<Object[]> countTicketsByMonth(@Param("start") java.time.LocalDateTime start, @Param("end") java.time.LocalDateTime end);
 }
+
+

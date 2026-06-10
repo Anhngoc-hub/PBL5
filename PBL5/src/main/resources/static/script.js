@@ -277,6 +277,12 @@ async function loadDashboard() {
             }
         });
     }
+<<<<<<< HEAD
+=======
+    const lockers = await apiCall(ENDPOINTS.LOCKERS);
+    if (document.getElementById("layout")) document.getElementById("layout").innerHTML = lockers.map(l => `<div class="locker status-${getStatusClass(l.status)}" title="Vị trí: ${l.location || 'N/A'}">${l.id}</div>`).join("");
+    initTrendChartAndLogic();
+>>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
 }
 
 async function loadTickets() {
@@ -376,6 +382,13 @@ function openImageGalleryPopup(sid, json) {
 }
 
 function resetSessionFilters() { document.getElementById("sessionSearch").value = ""; document.getElementById("statusFilter").value = "ALL"; if (document.getElementById("sortField")) document.getElementById("sortField").value = "start_time"; loadSessions(); }
+<<<<<<< HEAD
+=======
+
+// ==========================================
+// LOGIC VẼ BIỂU ĐỒ XU HƯỚNG (TREND CHART)
+// ==========================================
+>>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
 let trendChartInstance = null;
 
 function initTrendChartAndLogic() {
@@ -384,6 +397,7 @@ function initTrendChartAndLogic() {
 
     if (!trendChartInstance) {
         // 1. Khởi tạo biểu đồ trống với 2 đường
+<<<<<<< HEAD
         trendChartInstance = new Chart(trendCtx.getContext('2d'), {
             type: 'line',
             data: {
@@ -413,6 +427,37 @@ function initTrendChartAndLogic() {
 
         // 2. Xử lý sự kiện khi đổi Dropdown
         document.getElementById('timeFilter')?.addEventListener('change', function () {
+=======
+      trendChartInstance = new Chart(trendCtx.getContext('2d'), {
+                  type: 'line',
+                  data: {
+                      labels: [],
+                      datasets: [
+                          { label: 'Lượt sử dụng', data: [], borderColor: '#f39c12', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+                          { label: 'Ticket xử lý', data: [], borderColor: '#9b59b6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      interaction: { mode: 'index', intersect: false },
+                      plugins: { legend: { position: 'bottom' } },
+                      // BỔ SUNG ĐOẠN SCALES NÀY VÀO
+                      scales: {
+                          y: {
+                              beginAtZero: true,
+                              ticks: {
+                                  stepSize: 1, // Ép trục tung nhảy từng bước là 1 (chỉ hiện số nguyên)
+                                  precision: 0 // Không lấy số thập phân
+                              }
+                          }
+                      }
+                  }
+              });
+
+        // 2. Xử lý sự kiện khi đổi Dropdown
+        document.getElementById('timeFilter')?.addEventListener('change', function() {
+>>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
             if (this.value === 'custom') {
                 document.getElementById('customDateRange').style.display = 'flex';
             } else {
@@ -422,7 +467,11 @@ function initTrendChartAndLogic() {
         });
 
         // 3. Xử lý sự kiện khi bấm nút "Lọc" (cho tùy chọn ngày)
+<<<<<<< HEAD
         document.getElementById('applyFilterBtn')?.addEventListener('click', function () {
+=======
+        document.getElementById('applyFilterBtn')?.addEventListener('click', function() {
+>>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
             const start = document.getElementById('startDate').value;
             const end = document.getElementById('endDate').value;
 

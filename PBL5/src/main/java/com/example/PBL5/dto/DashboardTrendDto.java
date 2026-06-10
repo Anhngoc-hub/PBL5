@@ -24,4 +24,10 @@ public class DashboardTrendDto {
     public List<Long> getTickets() {
         return tickets;
     }
+<<<<<<< HEAD
 }
+=======
+}
+
+
+>>>>>>> 471904535ee3a974de671679233564eb79a3eb6d
