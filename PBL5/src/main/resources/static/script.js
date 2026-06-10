@@ -215,6 +215,7 @@ async function loadDashboard() {
     }
     const lockers = await apiCall(ENDPOINTS.LOCKERS);
     if (document.getElementById("layout")) document.getElementById("layout").innerHTML = lockers.map(l => `<div class="locker status-${getStatusClass(l.status)}" title="Vị trí: ${l.location || 'N/A'}">${l.id}</div>`).join("");
+    initTrendChartAndLogic();
 }
 
 async function loadTickets() {
@@ -314,3 +315,86 @@ function openImageGalleryPopup(sid, json) {
 }
 
 function resetSessionFilters() { document.getElementById("sessionSearch").value = ""; document.getElementById("statusFilter").value = "ALL"; if (document.getElementById("sortField")) document.getElementById("sortField").value = "start_time"; loadSessions(); }
+
+// ==========================================
+// LOGIC VẼ BIỂU ĐỒ XU HƯỚNG (TREND CHART)
+// ==========================================
+let trendChartInstance = null;
+
+function initTrendChartAndLogic() {
+    const trendCtx = document.getElementById('trendChart');
+    if (!trendCtx) return; // Nếu đang ở trang khác thì bỏ qua
+
+    if (!trendChartInstance) {
+        // 1. Khởi tạo biểu đồ trống với 2 đường
+      trendChartInstance = new Chart(trendCtx.getContext('2d'), {
+                  type: 'line',
+                  data: {
+                      labels: [],
+                      datasets: [
+                          { label: 'Lượt sử dụng', data: [], borderColor: '#f39c12', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+                          { label: 'Ticket xử lý', data: [], borderColor: '#9b59b6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
+                      ]
+                  },
+                  options: {
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      interaction: { mode: 'index', intersect: false },
+                      plugins: { legend: { position: 'bottom' } },
+                      // BỔ SUNG ĐOẠN SCALES NÀY VÀO
+                      scales: {
+                          y: {
+                              beginAtZero: true,
+                              ticks: {
+                                  stepSize: 1, // Ép trục tung nhảy từng bước là 1 (chỉ hiện số nguyên)
+                                  precision: 0 // Không lấy số thập phân
+                              }
+                          }
+                      }
+                  }
+              });
+
+        // 2. Xử lý sự kiện khi đổi Dropdown
+        document.getElementById('timeFilter')?.addEventListener('change', function() {
+            if (this.value === 'custom') {
+                document.getElementById('customDateRange').style.display = 'flex';
+            } else {
+                document.getElementById('customDateRange').style.display = 'none';
+                fetchTrendData(this.value);
+            }
+        });
+
+        // 3. Xử lý sự kiện khi bấm nút "Lọc" (cho tùy chọn ngày)
+        document.getElementById('applyFilterBtn')?.addEventListener('click', function() {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+
+            if (!start || !end) return alert("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc!");
+            if (new Date(start) > new Date(end)) return alert("Ngày bắt đầu không thể lớn hơn ngày kết thúc!");
+
+            fetchTrendData('custom', start, end);
+        });
+    }
+
+    // 4. Gọi API lấy dữ liệu mặc định (7 ngày qua) khi vừa vào trang
+    fetchTrendData('week');
+}
+
+// Hàm gọi API lấy dữ liệu Trend và vẽ lại biểu đồ
+async function fetchTrendData(type, start = '', end = '') {
+    // Đảm bảo biến API đã được định nghĩa ở đầu file (VD: const API = "http://localhost:8080/api";)
+    let url = `${API}/api/dashboard/trend?type=${type}`;
+    if (type === 'custom') url += `&startDate=${start}&endDate=${end}`;
+
+    const data = await apiCall(url);
+    if (data && trendChartInstance) {
+        // Cập nhật dữ liệu mới vào biểu đồ
+        trendChartInstance.data.labels = data.labels;
+        trendChartInstance.data.datasets[0].data = data.usage;
+        trendChartInstance.data.datasets[1].data = data.tickets;
+
+        // Vẽ lại biểu đồ
+        trendChartInstance.update();
+
+    }
+}
