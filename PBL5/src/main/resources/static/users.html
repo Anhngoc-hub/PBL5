@@ -37,8 +37,8 @@
                     <select id="statusFilter"
                         style="padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; background: white;">
                         <option value="ALL">-- Tất cả --</option>
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="FINISHED">FINISHED</option>
+                        <option value="active">ACTIVE</option>
+                        <option value="inactive">INACTIVE</option>
                     </select>
                 </div>
 
@@ -91,15 +91,7 @@
             </table>
         </div>
 
-        <div class="security-note"
-            style="margin-top: 25px; padding: 15px; background: #f0fdf4; border-radius: 8px; display: flex; align-items: center; gap: 10px;">
-            <span style="font-size: 20px;">🛡️</span>
-            <p style="font-size: 13px; color: #166534; margin: 0;">
-                <strong>Bảo mật dữ liệu:</strong> Trường <code>palm_hash</code> được lưu trữ dưới dạng mã băm một chiều
-                (Hash). Admin chỉ có thể xem mã nhận diện, không thể truy nguyên hình ảnh lòng bàn tay gốc của người
-                dùng.
-            </p>
-        </div>
+
     </div>
 
     <script src="script.js"></script>

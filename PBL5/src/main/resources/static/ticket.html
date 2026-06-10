@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 
 <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Report Issue</title>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -10,22 +12,26 @@
 
     <div class="main">
         <h1>Report New Issue</h1>
-        <div class="chart-box" style="max-width: 500px;">
+
+        <div class="chart-box ticket-container">
             <form id="ticketForm">
                 <div class="form-group">
-                    <label>Session ID:</label>
+                    <label for="ticketSessionId">Session ID:</label>
                     <input type="text" id="ticketSessionId" required>
                 </div>
+
                 <div class="form-group">
-                    <label>Issue Description:</label>
+                    <label for="ticketReason">Issue Description:</label>
                     <textarea id="ticketReason" rows="5"
-                        style="width:100%; border-radius:6px; border:1px solid #ddd; padding:10px;"></textarea>
+                        placeholder="Nhập lý do hoặc mô tả sự cố tại đây..."></textarea>
                 </div>
-                <button type="submit" style="width:100%; background:#ef4444;">Submit Ticket</button>
+
+                <button type="submit" class="btn-submit-ticket">Submit Ticket</button>
             </form>
-            <p id="responseMessage" style="margin-top:15px; text-align:center;"></p>
+            <p id="responseMessage"></p>
         </div>
     </div>
+
     <script src="script.js"></script>
 </body>
 

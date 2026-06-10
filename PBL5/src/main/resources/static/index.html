@@ -30,7 +30,7 @@
             </div>
             <div class="card green">
                 <h3>Tủ đang trống</h3>
-                <p id="free">0</p>
+                <p id="available">0</p>
             </div>
             <div class="card orange">
                 <h3>Đang sử dụng</h3>
@@ -46,6 +46,35 @@
             </div>
         </div>
 
+        <div class="trend-section"
+            style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-top: 20px; margin-bottom: 20px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                <h3 style="margin: 0;">Biểu đồ Xu hướng Hoạt động</h3>
+
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select id="timeFilter" style="padding: 5px; border-radius: 5px; border: 1px solid #ccc;">
+                        <option value="week">7 ngày qua</option>
+                        <option value="month">Tháng này</option>
+                        <option value="year">Năm nay</option>
+                        <option value="custom">Tùy chọn ngày...</option>
+                    </select>
+
+                    <div id="customDateRange" style="display: none; gap: 5px; align-items: center;">
+                        <input type="date" id="startDate"
+                            style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        <span>-</span>
+                        <input type="date" id="endDate"
+                            style="padding: 4px; border: 1px solid #ccc; border-radius: 4px;">
+                        <button id="applyFilterBtn"
+                            style="padding: 5px 15px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">Lọc</button>
+                    </div>
+                </div>
+            </div>
+
+            <div style="height: 300px; width: 100%;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
         <div class="dashboard-content">
             <div class="chart-container">
                 <h3>Tỷ lệ trạng thái tủ</h3>
@@ -54,15 +83,10 @@
                 </div>
             </div>
 
-            <div class="layout-container">
-                <h3>Sơ đồ tủ đồ thực tế </h3>
-                <div id="layout">
-                    <p>Đang tải dữ liệu...</p>
-                </div>
-                <div class="legend">
-                    <span class="dot free"></span> Trống
-                    <span class="dot in-use"></span> Đang dùng
-                    <span class="dot error"></span> Lỗi
+            <div class="chart-container">
+                <h3>Số lượng tủ theo trạng thái</h3>
+                <div class="chart-box">
+                    <canvas id="barChart"></canvas>
                 </div>
             </div>
         </div>

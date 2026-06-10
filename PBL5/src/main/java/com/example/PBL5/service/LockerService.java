@@ -3,27 +3,31 @@ package com.example.PBL5.service;
 import java.time.LocalDateTime;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
 
-import com.example.PBL5.dto.adminOpenRequestDto;
-import com.example.PBL5.entity.Ticket;
-import com.example.PBL5.repository.TicketRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
 
+import com.example.PBL5.dto.adminOpenRequestDto;
 import com.example.PBL5.dto.updateLocker;
 import com.example.PBL5.entity.Locker;
+import com.example.PBL5.entity.Session;
+import com.example.PBL5.entity.Ticket;
 import com.example.PBL5.repository.LockerRepository;
+import com.example.PBL5.repository.SessionRepository;
+import com.example.PBL5.repository.TicketRepository;
 import com.example.PBL5.utils.IdGenerator;
-import org.springframework.web.client.RestTemplate;
 
 @Service
 public class LockerService {
 
     @Value("${esp32.ip}")
     private String ESP32_IP;
-
+    @Autowired
+    private SessionRepository sessionRepository;
     // Công cụ để Server gọi API sang con ESP32
     private final RestTemplate restTemplate = new RestTemplate();
 
@@ -85,7 +89,9 @@ public class LockerService {
         return lockerRepository.searchWithStatus(keyword, status);
     }
 
-    public String adminOpenLocker(adminOpenRequestDto request ) {
+
+
+    public String adminOpenLocker(adminOpenRequestDto request) {
         try {
             String id = request.getLockerId();
             String reason = request.getReason();
@@ -101,9 +107,25 @@ public class LockerService {
                 Locker locker = lockerRepository.findById(id)
                         .orElseThrow(() -> new RuntimeException("Locker not found"));
 
-                locker.setStatus("AVAILABLE");
+                // 1. Cập nhật trạng thái tủ đồ về available dưới Database
+                locker.setStatus("available");
                 lockerRepository.save(locker);
 
+                // 2. 🔥 ĐÃ SỬA: Bỏ .orElse(null) để khớp với hàm Repository trả về kiểu Session trực tiếp
+                Session activeSession = sessionRepository.findByLockerIdAndStatus(id, "active");
+
+                if (activeSession != null) {
+                    activeSession.setStatus("inactive");
+
+                    // ⚠️ TOÀN LƯU Ý CHỖ NÀY:
+                    // Nếu trong Entity Session của bạn đặt tên biến thời gian kết thúc là end_time (viết thường),
+                    // hãy đổi hàm dưới đây thành activeSession.setEnd_time(LocalDateTime.now()); cho khớp nhé!
+                    activeSession.setEndTime(LocalDateTime.now());
+
+                    sessionRepository.save(activeSession);
+                }
+
+                // 3. Khởi tạo Ticket báo cáo sự cố/mở khẩn cấp từ Ban quản lý
                 Ticket lastTicket = ticketRepository.findTopByOrderByIdDesc();
                 String lastId = null;
                 if (lastTicket != null) {
@@ -113,27 +135,35 @@ public class LockerService {
                 String newId = IdGenerator.generateId(lastId, "TK");
                 Ticket ticket = new Ticket();
                 ticket.setId(newId);
+
+                // Đồng bộ chuẩn tên trường created_at theo đúng Entity Ticket của Toàn
                 ticket.setCreated_at(LocalDateTime.now());
                 ticket.setReason(reason);
                 ticket.setLocker(locker);
 
-                ticketRepository.save(ticket);
+                // 🔥 ĐÃ ĐỒNG BỘ: Gắn kết trực tiếp Object thực thể Session vào Ticket (Không còn lỗi đỏ)
+                if (activeSession != null) {
+                    ticket.setSession(activeSession);
+                }
 
+                ticketRepository.save(ticket);
             }
             return "Locker " + id + " -> " + response;
         } catch (Exception e) {
             e.printStackTrace();
-            return "ESP32 offline";
-            }
-
+            throw new org.springframework.web.server.ResponseStatusException(
+            org.springframework.http.HttpStatus.SERVICE_UNAVAILABLE, "Lỗi kết nối Server phần cứng hoặc AI offline: " + e.getMessage()
+        
+            );
         }
+    }
     public Map<String, Object> getDashboardStatistics() {
     Map<String, Object> stats = new HashMap<>();
     
     // Đẩy toàn bộ gánh nặng tính toán nghiệp vụ xuống đây
     stats.put("total", lockerRepository.count());
-    stats.put("free", lockerRepository.countByStatusIn(Arrays.asList("FREE", "AVAILABLE")));
-    stats.put("occupied", lockerRepository.countByStatusIn(Arrays.asList("OCCUPIED", "IN_USE")));
+    stats.put("free", lockerRepository.countByStatusIn(Arrays.asList("FREE", "available")));
+    stats.put("occupied", lockerRepository.countByStatusIn(Arrays.asList("occupied", "IN_USE")));
     stats.put("error", lockerRepository.countByStatus("ERROR"));
     stats.put("supportCount", ticketRepository.count()); 
     

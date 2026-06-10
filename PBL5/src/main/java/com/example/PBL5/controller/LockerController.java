@@ -42,7 +42,7 @@ public class LockerController {
     public Locker createLocker(@RequestBody createLocker request) {
         Locker locker = new Locker();
         locker.setLocation(request.getLocation());
-        locker.setStatus("AVAILABLE");
+        locker.setStatus("available");
         return lockerService.createLocker(locker);
     }
 

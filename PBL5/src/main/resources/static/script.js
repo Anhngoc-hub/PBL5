@@ -3,8 +3,7 @@
 // ==========================================
 const API = "http://localhost:8080";
 const ENDPOINTS = { LOCKERS: `${API}/lockers`, SESSIONS: `${API}/sessions`, TICKETS: `${API}/tickets` };
-let chartInstance = null, isSearching = false, originalTicketsData = [];
-
+let chartInstance = null, barChartInstance = null, isSearching = false, originalTicketsData = [];
 // Hàm Generic gọi API tập trung, tự động bắt lỗi hệ thống
 async function apiCall(url, options = {}) {
     try {
@@ -32,8 +31,13 @@ function formatSessionFolderId(rawTime) {
 }
 
 // Trả về class CSS theo trạng thái tủ đồ
-const getStatusClass = (s = "") => ["FREE", "AVAILABLE"].includes(s.toUpperCase()) ? "free" : ["OCCUPIED", "IN_USE"].includes(s.toUpperCase()) ? "in-use" : "error";
-
+const getStatusClass = (s = "") => {
+    if (!s) return "error";
+    const statusLower = s.trim().toLowerCase();
+    if (statusLower === "available" || statusLower === "free") return "available";
+    if (statusLower === "occupied" || statusLower === "in-use") return "occupied";
+    return "error";
+};
 // Khởi chạy
 document.addEventListener("DOMContentLoaded", () => {
     loadPageData();
@@ -57,6 +61,14 @@ function showErrorDialog(msg) {
 }
 
 function closeErrorDialog() { document.getElementById("errorDialog").style.display = "none"; }
+function showSuccessDialog(message) {
+    document.getElementById("successDialogMessage").textContent = message;
+    document.getElementById("successDialog").style.display = "flex";
+}
+
+function closeSuccessDialog() {
+    document.getElementById("successDialog").style.display = "none";
+}
 function closeModal() { ['lockerModal', 'error-message'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = "none"; }); }
 function closeTicketModal() { document.getElementById("ticketModal").style.display = "none"; }
 
@@ -146,10 +158,12 @@ async function submitTicket() {
 
         if (response.ok) {
             closeTicketModal();
-            alert("✅ Đã gửi lệnh mở tủ thực tế + Lưu log Ticket thành công!");
+            showSuccessDialog(
+                "Đã gửi lệnh mở tủ thực tế và lưu Ticket thành công!"
+            );
             loadLockers(); // Tải lại danh sách tủ để cập nhật trạng thái mới lên màn hình
         } else {
-            showErrorDialog("Không thể thực hiện lệnh mở tủ. Backend hoặc thiết bị gặp sự cố!");
+            showErrorDialog(`Không thể mở tủ, Lỗi kết nối hoặc thiết bị gặp sự cố!`);
         }
     } catch (e) {
         showErrorDialog("Lỗi kết nối Server phần cứng!");
@@ -197,24 +211,72 @@ async function deleteLocker(id) { if (confirm(`Xóa tủ ${id}?`)) { await fetch
 async function loadDashboard() {
     const stats = await apiCall(`${API}/lockers/dashboard/stats`);
     if (!stats) return;
+    console.log("DỮ LIỆU STATS THỰC TẾ:", stats);
 
-    document.getElementById("total").innerText = stats.total;
-    document.getElementById("free").innerText = stats.free;
-    document.getElementById("occupied").innerText = stats.occupied;
-    document.getElementById("error").innerText = stats.error;
-    document.getElementById("supportCount").innerText = stats.supportCount;
+    // 1. Đổ dữ liệu lên các thẻ Card thống kê (Đã sửa lại id="available" theo đúng HTML của Toàn)
+    if (document.getElementById("total")) document.getElementById("total").innerText = stats.total || 0;
+    if (document.getElementById("available")) document.getElementById("available").innerText = stats.free || 0; // 🔥 Đã khớp id="available"
+    if (document.getElementById("occupied")) document.getElementById("occupied").innerText = stats.occupied || 0;
+    if (document.getElementById("error")) document.getElementById("error").innerText = stats.error || 0;
+    if (document.getElementById("supportCount")) document.getElementById("supportCount").innerText = stats.supportCount || 0;
 
-    const ctx = document.getElementById("chart");
-    if (ctx) {
+    // Ép kiểu số chuẩn từ dữ liệu log thực tế từ Console
+    const countFree = Number(stats.free || 0);
+    const countOccupied = Number(stats.occupied || 0);
+    const countError = Number(stats.error || 0);
+
+    // 2. CẤU HÌNH BIỂU ĐỒ TRÒN (DOUGHNUT CHART)
+    const ctxDoughnut = document.getElementById("chart");
+    if (ctxDoughnut) {
         if (chartInstance) chartInstance.destroy();
-        chartInstance = new Chart(ctx, {
+        chartInstance = new Chart(ctxDoughnut, {
             type: 'doughnut',
-            data: { labels: ['Trống', 'Đang dùng', 'Lỗi'], datasets: [{ data: [stats.free, stats.occupied, stats.error], backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'] }] },
-            options: { responsive: true, maintainAspectRatio: false }
+            data: {
+                labels: ['Trống', 'Đang dùng', 'Lỗi'],
+                datasets: [{
+                    data: [countFree, countOccupied, countError],
+                    backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'], // Xanh, Cam, Đỏ
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
+            }
         });
     }
-    const lockers = await apiCall(ENDPOINTS.LOCKERS);
-    if (document.getElementById("layout")) document.getElementById("layout").innerHTML = lockers.map(l => `<div class="locker status-${getStatusClass(l.status)}" title="Vị trí: ${l.location || 'N/A'}">${l.id}</div>`).join("");
+
+    // 3. CẤU HÌNH BIỂU ĐỒ CỘT (BAR CHART)
+    const ctxBar = document.getElementById("barChart");
+    if (ctxBar) {
+        if (barChartInstance) barChartInstance.destroy(); // Xóa chart cũ trước khi vẽ lại tuần hoàn
+        barChartInstance = new Chart(ctxBar, {
+            type: 'bar',
+            data: {
+                labels: ['Trống', 'Đang dùng', 'Lỗi'],
+                datasets: [{
+                    label: 'Số lượng tủ đồ',
+                    data: [countFree, countOccupied, countError],
+                    backgroundColor: ['#22c55e', '#f59e0b', '#ef4444'], // Đồng bộ màu sắc 
+                    borderRadius: 6, // Bo góc đầu cột cho hiện đại
+                    borderWidth: 0
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false } // Ẩn nhãn chú thích chung do màu cột đã rõ nghĩa
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { stepSize: 1 } // Ép chia vạch theo số nguyên (1, 2, 3...)
+                    }
+                }
+            }
+        });
+    }
 }
 
 async function loadTickets() {
@@ -285,7 +347,7 @@ function renderSessionTable(data) {
                 <td style="text-align: center; padding: 5px;">
                     ${folderId ? `<div id="img-container-${folderId}" style="width: 60px; height: 60px; border-radius: 6px; overflow: hidden; background: #e2e8f0; display: inline-flex; align-items: center; justify-content: center; border: 1px solid #cbd5e1;"><span style="font-size: 11px; color: #64748b;">⏳</span></div>` : '---'}
                 </td>
-                <td><span style="background: ${s.status === 'ACTIVE' ? '#22c55e' : '#64748b'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">${s.status}</span></td>
+                <td><span style="background: ${s.status === 'active' ? '#22c55e' : '#64748b'}; color: white; padding: 3px 8px; border-radius: 12px; font-size: 11px; font-weight: bold;">${s.status}</span></td>
             </tr>
         `;
     }).join("");
@@ -314,3 +376,82 @@ function openImageGalleryPopup(sid, json) {
 }
 
 function resetSessionFilters() { document.getElementById("sessionSearch").value = ""; document.getElementById("statusFilter").value = "ALL"; if (document.getElementById("sortField")) document.getElementById("sortField").value = "start_time"; loadSessions(); }
+let trendChartInstance = null;
+
+function initTrendChartAndLogic() {
+    const trendCtx = document.getElementById('trendChart');
+    if (!trendCtx) return; // Nếu đang ở trang khác thì bỏ qua
+
+    if (!trendChartInstance) {
+        // 1. Khởi tạo biểu đồ trống với 2 đường
+        trendChartInstance = new Chart(trendCtx.getContext('2d'), {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [
+                    { label: 'Lượt sử dụng', data: [], borderColor: '#f39c12', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 },
+                    { label: 'Ticket xử lý', data: [], borderColor: '#9b59b6', backgroundColor: 'transparent', tension: 0.3, borderWidth: 2 }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                plugins: { legend: { position: 'bottom' } },
+                // BỔ SUNG ĐOẠN SCALES NÀY VÀO
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            stepSize: 1, // Ép trục tung nhảy từng bước là 1 (chỉ hiện số nguyên)
+                            precision: 0 // Không lấy số thập phân
+                        }
+                    }
+                }
+            }
+        });
+
+        // 2. Xử lý sự kiện khi đổi Dropdown
+        document.getElementById('timeFilter')?.addEventListener('change', function () {
+            if (this.value === 'custom') {
+                document.getElementById('customDateRange').style.display = 'flex';
+            } else {
+                document.getElementById('customDateRange').style.display = 'none';
+                fetchTrendData(this.value);
+            }
+        });
+
+        // 3. Xử lý sự kiện khi bấm nút "Lọc" (cho tùy chọn ngày)
+        document.getElementById('applyFilterBtn')?.addEventListener('click', function () {
+            const start = document.getElementById('startDate').value;
+            const end = document.getElementById('endDate').value;
+
+            if (!start || !end) return alert("Vui lòng chọn đầy đủ ngày bắt đầu và kết thúc!");
+            if (new Date(start) > new Date(end)) return alert("Ngày bắt đầu không thể lớn hơn ngày kết thúc!");
+
+            fetchTrendData('custom', start, end);
+        });
+    }
+
+    // 4. Gọi API lấy dữ liệu mặc định (7 ngày qua) khi vừa vào trang
+    fetchTrendData('week');
+}
+
+// Hàm gọi API lấy dữ liệu Trend và vẽ lại biểu đồ
+async function fetchTrendData(type, start = '', end = '') {
+    // Đảm bảo biến API đã được định nghĩa ở đầu file (VD: const API = "http://localhost:8080/api";)
+    let url = `${API}/api/dashboard/trend?type=${type}`;
+    if (type === 'custom') url += `&startDate=${start}&endDate=${end}`;
+
+    const data = await apiCall(url);
+    if (data && trendChartInstance) {
+        // Cập nhật dữ liệu mới vào biểu đồ
+        trendChartInstance.data.labels = data.labels;
+        trendChartInstance.data.datasets[0].data = data.usage;
+        trendChartInstance.data.datasets[1].data = data.tickets;
+
+        // Vẽ lại biểu đồ
+        trendChartInstance.update();
+
+    }
+}
